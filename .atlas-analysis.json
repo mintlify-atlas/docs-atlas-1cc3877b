@@ -1,0 +1,104 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "Decart AI SDK Provider",
+  "projectDescription": "AI SDK provider for Decart's image and video generation models",
+  "theme": "palm",
+  "primaryColor": "#7C3AED",
+  "lightColor": "#A78BFA",
+  "darkColor": "#5B21B6",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Image Generation",
+            "pages": [
+              "image/overview",
+              "image/models",
+              "image/settings",
+              "image/examples"
+            ]
+          },
+          {
+            "group": "Video Generation",
+            "pages": [
+              "video/overview",
+              "video/models",
+              "video/text-to-video",
+              "video/image-to-video",
+              "video/motion-control",
+              "video/settings",
+              "video/examples"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/configuration",
+              "advanced/provider-options",
+              "advanced/error-handling"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Core",
+            "pages": [
+              "api/create-decart",
+              "api/decart-provider"
+            ]
+          },
+          {
+            "group": "Image API",
+            "pages": [
+              "api/image-models",
+              "api/image-settings"
+            ]
+          },
+          {
+            "group": "Video API",
+            "pages": [
+              "api/video-models",
+              "api/video-settings",
+              "api/video-provider-options"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "AI SDK integration for Decart image and video generation",
+    "Text-to-image generation with lucy-pro-t2i model",
+    "Text-to-video generation with lucy-pro-t2v model",
+    "Image-to-video generation with lucy-pro-i2v and lucy-dev-i2v models",
+    "Motion-controlled video generation with lucy-motion model",
+    "Support for 16:9 and 9:16 aspect ratios",
+    "Configurable resolution (720p, 480p)",
+    "Seed-based reproducible generation",
+    "Trajectory-based motion control for advanced video generation"
+  ],
+  "publicApiSurface": [
+    "decart - Default provider instance",
+    "createDecart() - Create custom provider instance",
+    "DecartProvider - Provider interface",
+    "DecartProviderSettings - Provider configuration options",
+    "DecartImageModelId - Image model type ('lucy-pro-t2i')",
+    "DecartVideoModelId - Video model types ('lucy-pro-t2v' | 'lucy-pro-i2v' | 'lucy-dev-i2v' | 'lucy-motion')",
+    "DecartVideoProviderOptions - Video-specific provider options (trajectory, orientation, polling)",
+    "image() - Create image model instance",
+    "video() - Create video model instance"
+  ]
+}
