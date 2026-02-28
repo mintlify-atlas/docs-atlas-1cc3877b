@@ -1,0 +1,444 @@
+---
+title: Video Settings
+description: Complete reference for video generation configuration options
+---
+
+This page documents all configuration options available for video generation with Decart models.
+
+## Standard Settings
+
+These settings are part of the AI SDK's standard video generation API:
+
+### aspectRatio
+
+<ParamField path="aspectRatio" type="string">
+  Controls the aspect ratio of the generated video.
+  
+  **Supported values:**
+  - `16:9` - Landscape orientation
+  - `9:16` - Portrait orientation
+  
+  **Default:** Model-dependent
+</ParamField>
+
+**Example:**
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A sunset over mountains',
+  aspectRatio: '16:9',
+});
+```
+
+<Warning>
+  Other aspect ratios will generate a warning and may fall back to default behavior.
+  
+  **Source Reference:** `src/decart-video-model.ts:113-122`
+</Warning>
+
+**How it works:**
+
+The `aspectRatio` value is converted to an `orientation` field for the API:
+- `16:9` → `orientation: "landscape"`
+- `9:16` → `orientation: "portrait"`
+
+**Source Reference:** `src/decart-video-model.ts:110-122`
+
+---
+
+### resolution
+
+<ParamField path="resolution" type="string">
+  Sets the video resolution.
+  
+  **Supported values:**
+  - `1280x720` - 720p (high quality)
+  - `854x480` - 480p (faster generation)
+  
+  **Default:** Model-dependent
+</ParamField>
+
+**Example:**
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A city at night',
+  resolution: '1280x720',
+});
+```
+
+**Conversion logic:**
+
+The height value determines the resolution string sent to the API:
+- Height 720 → `"720p"`
+- Height 480 → `"480p"`
+
+**Source References:**
+- Conversion: `src/decart-video-model.ts:42-49`
+- Validation: `src/decart-video-model.ts:125-135`
+
+<Note>
+  Unsupported resolutions will generate a warning and be ignored.
+</Note>
+
+---
+
+### seed
+
+<ParamField path="seed" type="number">
+  Random seed for reproducible video generation.
+  
+  Using the same seed with identical parameters produces the same output.
+</ParamField>
+
+**Example:**
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A peaceful lake',
+  seed: 42,
+});
+```
+
+**How it works:**
+
+The seed is appended to the FormData request:
+
+```typescript
+if (options.seed != null) {
+  formData.append('seed', options.seed.toString());
+}
+```
+
+**Source Reference:** `src/decart-video-model.ts:152-154`
+
+---
+
+### Unsupported Settings
+
+These standard AI SDK settings are not supported by Decart models and will generate warnings:
+
+<ParamField path="fps" type="number">
+  Frames per second - **Not supported**
+  
+  **Source Reference:** `src/decart-video-model.ts:138-140`
+</ParamField>
+
+<ParamField path="duration" type="number">
+  Video duration - **Not supported**
+  
+  **Source Reference:** `src/decart-video-model.ts:141-143`
+</ParamField>
+
+```typescript
+const { videos, warnings } = await generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A video',
+  fps: 30,        // Will generate a warning
+  duration: 5000, // Will generate a warning
+});
+
+console.log(warnings);
+// [
+//   { type: 'unsupported', feature: 'fps' },
+//   { type: 'unsupported', feature: 'duration' }
+// ]
+```
+
+## Provider-Specific Options
+
+Decart-specific options are passed via `providerOptions.decart`:
+
+### trajectory
+
+<ParamField path="providerOptions.decart.trajectory" type="Array<{ frame: number; x: number; y: number }>">
+  Motion trajectory for `lucy-motion` model.
+  
+  Each point specifies:
+  - `frame` - Frame number (0-based)
+  - `x` - Horizontal position (0.0 to 1.0)
+  - `y` - Vertical position (0.0 to 1.0)
+  
+  **Only supported by:** `lucy-motion`
+</ParamField>
+
+**Example:**
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-motion'),
+  prompt: {
+    image: imageData,
+    text: 'Motion path',
+  },
+  providerOptions: {
+    decart: {
+      trajectory: [
+        { frame: 0, x: 0.5, y: 0.5 },
+        { frame: 12, x: 0.7, y: 0.9 },
+        { frame: 25, x: 0.3, y: 0.1 },
+      ],
+    },
+  },
+});
+```
+
+**Source References:**
+- Type definition: `src/decart-video-model.ts:18-22`
+- Processing: `src/decart-video-model.ts:169-171`
+
+<Note>
+  See the [Motion Control](/video/motion-control) guide for detailed trajectory usage.
+</Note>
+
+---
+
+### orientation
+
+<ParamField path="providerOptions.decart.orientation" type="'landscape' | 'portrait'">
+  Override orientation directly instead of deriving from `aspectRatio`.
+  
+  **Values:**
+  - `landscape` - Horizontal orientation
+  - `portrait` - Vertical orientation
+  
+  This takes precedence over `aspectRatio` if both are specified.
+</ParamField>
+
+**Example:**
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A tall building',
+  providerOptions: {
+    decart: {
+      orientation: 'portrait',
+    },
+  },
+});
+```
+
+**Source References:**
+- Type definition: `src/decart-video-model.ts:24-28`
+- Processing: `src/decart-video-model.ts:111-122`
+
+---
+
+### pollIntervalMs
+
+<ParamField path="providerOptions.decart.pollIntervalMs" type="number" default="1500">
+  Time in milliseconds between status checks during video generation.
+  
+  Lower values check more frequently but increase API calls.
+</ParamField>
+
+**Example:**
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A video',
+  providerOptions: {
+    decart: {
+      pollIntervalMs: 2000, // Check every 2 seconds
+    },
+  },
+});
+```
+
+**Source References:**
+- Type definition: `src/decart-video-model.ts:31-33`
+- Usage: `src/decart-video-model.ts:196`
+
+---
+
+### pollTimeoutMs
+
+<ParamField path="providerOptions.decart.pollTimeoutMs" type="number" default="300000">
+  Maximum time in milliseconds to wait for video generation.
+  
+  **Default:** 300000 (5 minutes)
+  
+  Increase this for complex videos or slow network conditions.
+</ParamField>
+
+**Example:**
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-motion'),
+  prompt: { image: imageData, text: 'Complex animation' },
+  providerOptions: {
+    decart: {
+      pollTimeoutMs: 600000, // 10 minute timeout
+    },
+  },
+});
+```
+
+**How it works:**
+
+```typescript
+const pollTimeoutMs = decartOptions.pollTimeoutMs ?? 300_000;
+const startTime = Date.now();
+
+while (true) {
+  if (Date.now() - startTime > pollTimeoutMs) {
+    throw new AISDKError({
+      name: 'AI_APICallError',
+      message: `Video generation timed out after ${pollTimeoutMs}ms`,
+    });
+  }
+  // ... polling logic
+}
+```
+
+**Source References:**
+- Type definition: `src/decart-video-model.ts:35-38`
+- Usage: `src/decart-video-model.ts:197`, `211-216`
+
+## Complete Configuration Example
+
+Here's a video generation call using all available settings:
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+import fs from 'fs';
+
+const imageData = fs.readFileSync('input.jpg');
+
+const { videos, warnings, response } = await generateVideo({
+  model: decart.video('lucy-motion'),
+  
+  // Prompt (required)
+  prompt: {
+    image: imageData,
+    text: 'The subject moves along a smooth path',
+  },
+  
+  // Standard settings
+  aspectRatio: '16:9',
+  resolution: '1280x720',
+  seed: 42,
+  
+  // Decart-specific options
+  providerOptions: {
+    decart: {
+      trajectory: [
+        { frame: 0, x: 0.3, y: 0.5 },
+        { frame: 12, x: 0.5, y: 0.5 },
+        { frame: 25, x: 0.7, y: 0.5 },
+      ],
+      orientation: 'landscape',
+      pollIntervalMs: 2000,
+      pollTimeoutMs: 600000,
+    },
+  },
+  
+  // Request cancellation
+  abortSignal: new AbortController().signal,
+  
+  // Custom headers
+  headers: {
+    'X-Custom-Header': 'value',
+  },
+});
+
+// Save the video
+fs.writeFileSync('output.mp4', videos[0].uint8Array);
+
+// Check for warnings
+if (warnings.length > 0) {
+  console.warn('Generation warnings:', warnings);
+}
+
+// Access response metadata
+console.log('Model:', response.modelId);
+console.log('Generated at:', response.timestamp);
+```
+
+## Settings by Model
+
+| Setting | lucy-pro-t2v | lucy-pro-i2v | lucy-dev-i2v | lucy-motion |
+|---------|--------------|--------------|--------------|-------------|
+| aspectRatio | ✅ | ✅ | ✅ | ✅ |
+| resolution | ✅ | ✅ | ✅ | ✅ |
+| seed | ✅ | ✅ | ✅ | ✅ |
+| trajectory | ❌ | ❌ | ❌ | ✅ |
+| orientation | ✅ | ✅ | ✅ | ✅ |
+| pollIntervalMs | ✅ | ✅ | ✅ | ✅ |
+| pollTimeoutMs | ✅ | ✅ | ✅ | ✅ |
+
+## Response Structure
+
+The `generateVideo` function returns:
+
+```typescript
+interface VideoGenerationResult {
+  videos: Array<{
+    type: 'binary';
+    data: Uint8Array;
+    mediaType: 'video/mp4';
+    uint8Array: Uint8Array;
+  }>;
+  warnings: Array<{
+    type: 'unsupported';
+    feature: string;
+    details?: string;
+  }>;
+  response: {
+    timestamp: Date;
+    modelId: string;
+    headers: Record<string, string>;
+  };
+}
+```
+
+**Source Reference:** `src/decart-video-model.ts:247-261`
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Aspect Ratio Selection">
+    - Use `16:9` for landscape scenes (nature, cityscapes, wide shots)
+    - Use `9:16` for portrait content (people, tall subjects, mobile-first)
+    - Match the aspect ratio to your input image dimensions for I2V models
+    - Consider the target platform (web, mobile, social media)
+  </Accordion>
+
+  <Accordion title="Resolution Choice">
+    - Use `1280x720` (720p) for production and final output
+    - Use `854x480` (480p) for faster iteration during development
+    - Higher resolution increases generation time
+    - Both resolutions maintain the same aspect ratio
+  </Accordion>
+
+  <Accordion title="Seed Usage">
+    - Set a seed for reproducible results in testing
+    - Omit seed for variety in production
+    - Document seed values for successful generations
+    - Same seed ≠ same result if other parameters change
+  </Accordion>
+
+  <Accordion title="Polling Configuration">
+    - Increase `pollIntervalMs` to reduce API calls
+    - Increase `pollTimeoutMs` for complex generations
+    - Lower `pollIntervalMs` for faster response times
+    - Monitor timeout errors to adjust timeout values
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="View All Models" icon="list" href="/video/models">
+    Explore model-specific capabilities
+  </Card>
+  <Card title="See Examples" icon="code" href="/video/examples">
+    Browse complete working examples
+  </Card>
+  <Card title="Motion Control" icon="route" href="/video/motion-control">
+    Learn trajectory-based generation
+  </Card>
+  <Card title="Text-to-Video" icon="wand-magic-sparkles" href="/video/text-to-video">
+    Generate videos from text
+  </Card>
+</CardGroup>

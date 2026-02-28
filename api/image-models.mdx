@@ -1,0 +1,123 @@
+---
+title: Image Models
+description: Available image generation models in the Decart provider
+---
+
+## Model IDs
+
+```typescript
+type DecartImageModelId = "lucy-pro-t2i";
+```
+
+The Decart provider currently supports one image generation model.
+
+## Available Models
+
+### lucy-pro-t2i
+
+Text-to-image generation model powered by Lucy Pro.
+
+**Capabilities:**
+- Text-to-image generation
+- Seed-based reproducibility
+- Aspect ratio control (16:9 and 9:16)
+
+**Supported Settings:**
+- `prompt` - Text description of the image to generate
+- `seed` - Random seed for reproducible generation
+- `aspectRatio` - Only `"16:9"` (landscape) and `"9:16"` (portrait) are supported
+
+**Unsupported Settings:**
+- `size` - Will produce a warning if specified
+- Other aspect ratios - Will produce a warning if specified
+
+## Usage
+
+### Basic Text-to-Image
+
+```typescript
+import { createDecart } from '@ai-sdk/decart';
+import { generateImage } from 'ai';
+
+const decart = createDecart();
+
+const { image } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A serene mountain landscape at sunset'
+});
+```
+
+### With Seed for Reproducibility
+
+```typescript
+import { createDecart } from '@ai-sdk/decart';
+import { generateImage } from 'ai';
+
+const decart = createDecart();
+
+const { image } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A futuristic cityscape',
+  seed: 12345
+});
+```
+
+### With Aspect Ratio
+
+```typescript
+import { createDecart } from '@ai-sdk/decart';
+import { generateImage } from 'ai';
+
+const decart = createDecart();
+
+// Landscape orientation
+const { image: landscape } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'Wide mountain vista',
+  aspectRatio: '16:9'
+});
+
+// Portrait orientation
+const { image: portrait } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'Tall skyscraper',
+  aspectRatio: '9:16'
+});
+```
+
+## Model Specifications
+
+<ResponseField name="specificationVersion" type="string" default="v2">
+  All Decart image models implement the AI SDK v2 specification.
+</ResponseField>
+
+<ResponseField name="maxImagesPerCall" type="number" default="1">
+  Each generation call produces exactly one image.
+</ResponseField>
+
+<ResponseField name="provider" type="string" default="decart.image">
+  Provider identifier for the image models.
+</ResponseField>
+
+## Response Format
+
+Image models return binary image data with the following structure:
+
+```typescript
+{
+  images: [Uint8Array],
+  warnings: Array<ImageModelV2CallWarning>,
+  response: {
+    modelId: string,
+    timestamp: Date,
+    headers: Record<string, string>
+  }
+}
+```
+
+## Warnings
+
+The model may return warnings for unsupported settings:
+
+- `unsupported-setting: size` - When `size` parameter is provided
+- `unsupported-setting: aspectRatio` - When an unsupported aspect ratio is provided (only 16:9 and 9:16 are supported)

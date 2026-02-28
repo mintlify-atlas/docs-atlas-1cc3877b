@@ -1,0 +1,381 @@
+---
+title: Image-to-Video
+description: Animate images into videos using lucy-pro-i2v and lucy-dev-i2v
+---
+
+Image-to-video generation animates static images into dynamic videos. Decart provides two models for this capability: `lucy-pro-i2v` for production use and `lucy-dev-i2v` for development and testing.
+
+## Basic Usage
+
+<Steps>
+  <Step title="Import Dependencies">
+    ```typescript
+    import { decart } from '@decartai/ai-sdk-provider';
+    import { experimental_generateVideo as generateVideo } from 'ai';
+    import fs from 'fs';
+    ```
+  </Step>
+
+  <Step title="Load Image">
+    Load your input image as a `Uint8Array`:
+
+    ```typescript
+    const imageData = fs.readFileSync('input-image.jpg');
+    ```
+  </Step>
+
+  <Step title="Generate Video">
+    Pass the image and an optional text prompt:
+
+    ```typescript
+    const { videos } = await generateVideo({
+      model: decart.video('lucy-pro-i2v'),
+      prompt: {
+        image: imageData,
+        text: 'The subject begins to walk forward slowly',
+      },
+    });
+    ```
+
+    **Source Reference:** `examples/tasks/video-generation-i2v.ts:7-14`
+  </Step>
+
+  <Step title="Save the Video">
+    ```typescript
+    fs.writeFileSync('animated.mp4', videos[0].uint8Array);
+    ```
+  </Step>
+</Steps>
+
+## Complete Example
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+import fs from 'fs';
+
+export async function animateImage(imagePath: string) {
+  const imageData = fs.readFileSync(imagePath);
+  
+  const result = await generateVideo({
+    model: decart.video('lucy-pro-i2v'),
+    prompt: {
+      image: imageData,
+      text: 'The subject begins to walk forward slowly',
+    },
+  });
+  
+  const filename = `animated-${Date.now()}.mp4`;
+  fs.writeFileSync(filename, result.videos[0].uint8Array);
+  console.log(`Video saved to ${filename}`);
+  
+  return result;
+}
+```
+
+## Model Selection
+
+### lucy-pro-i2v (Production)
+
+Use `lucy-pro-i2v` for high-quality, production-ready image-to-video generation:
+
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-i2v'),
+  prompt: {
+    image: imageData,
+    text: 'The character turns their head and smiles',
+  },
+});
+```
+
+<Note>
+  **Source Reference:** `src/decart-video-settings.ts:3`
+</Note>
+
+### lucy-dev-i2v (Development)
+
+Use `lucy-dev-i2v` for faster iteration during development:
+
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-dev-i2v'),
+  prompt: {
+    image: imageData,
+    text: 'Testing animation concept',
+  },
+});
+```
+
+<Note>
+  The development model processes faster but may have lower quality compared to the production model.
+  
+  **Source Reference:** `src/decart-video-settings.ts:4`
+</Note>
+
+## Image Input Formats
+
+The `image` field accepts different input types:
+
+<Tabs>
+  <Tab title="Uint8Array">
+    ```typescript
+    const imageData = fs.readFileSync('image.jpg');
+    
+    const { videos } = await generateVideo({
+      model: decart.video('lucy-pro-i2v'),
+      prompt: {
+        image: imageData,
+        text: 'The scene comes to life',
+      },
+    });
+    ```
+  </Tab>
+
+  <Tab title="URL">
+    ```typescript
+    const { videos } = await generateVideo({
+      model: decart.video('lucy-pro-i2v'),
+      prompt: {
+        image: { type: 'url', url: 'https://example.com/image.jpg' },
+        text: 'The scene comes to life',
+      },
+    });
+    ```
+  </Tab>
+
+  <Tab title="Base64">
+    ```typescript
+    const { videos } = await generateVideo({
+      model: decart.video('lucy-pro-i2v'),
+      prompt: {
+        image: {
+          type: 'data',
+          data: base64String,
+          mediaType: 'image/jpeg',
+        },
+        text: 'The scene comes to life',
+      },
+    });
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+  The provider automatically handles image format conversion and appends it to the request.
+  
+  **Source References:**
+  - Image handling: `src/decart-video-model.ts:51-63`
+  - Base64 conversion: `src/decart-video-model.ts:65-72`
+  - FormData append: `src/decart-video-model.ts:164-166`
+</Note>
+
+## Animation Guidance
+
+### Text Prompts for Animation
+
+The text prompt guides how the image should be animated:
+
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-i2v'),
+  prompt: {
+    image: portraitImage,
+    text: 'The person looks around curiously',
+  },
+});
+```
+
+<Accordion title="Effective Animation Prompts">
+  **Good Animation Prompts:**
+  - "The character turns their head to the left"
+  - "Gentle wind blows through the trees"
+  - "The subject walks forward towards the camera"
+  - "Waves crash against the shore"
+  - "The person smiles and nods"
+
+  **Tips:**
+  - Describe natural, plausible movements
+  - Keep motion descriptions simple and focused
+  - Consider the physics and constraints of the scene
+  - Specify direction and speed when relevant
+</Accordion>
+
+### Image-Only Generation
+
+You can omit the text prompt to let the model determine appropriate animation:
+
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-i2v'),
+  prompt: {
+    image: imageData,
+  },
+});
+```
+
+<Warning>
+  While text prompts are optional, providing clear animation guidance typically produces better results.
+</Warning>
+
+## Customizing Output
+
+### Aspect Ratio
+
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-i2v'),
+  prompt: {
+    image: imageData,
+    text: 'The scene animates smoothly',
+  },
+  aspectRatio: '16:9',
+});
+```
+
+<Note>
+  Supported aspect ratios: `16:9` (landscape) and `9:16` (portrait)
+  
+  **Source Reference:** `src/decart-video-model.ts:113-122`
+</Note>
+
+### Resolution
+
+<CodeGroup>
+```typescript 720p (High Quality)
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-i2v'),
+  prompt: { image: imageData, text: 'Animate' },
+  resolution: '1280x720',
+});
+```
+
+```typescript 480p (Faster)
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-i2v'),
+  prompt: { image: imageData, text: 'Animate' },
+  resolution: '854x480',
+});
+```
+</CodeGroup>
+
+**Source Reference:** `src/decart-video-model.ts:42-49`
+
+### Reproducible Results
+
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-i2v'),
+  prompt: {
+    image: imageData,
+    text: 'The subject looks to the right',
+  },
+  seed: 12345,
+});
+```
+
+<Note>
+  Using the same image, prompt, seed, and settings will produce consistent results.
+</Note>
+
+## Advanced Options
+
+### Custom Polling
+
+Image-to-video generation is asynchronous. Customize the polling behavior:
+
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-i2v'),
+  prompt: {
+    image: imageData,
+    text: 'Complex animation sequence',
+  },
+  providerOptions: {
+    decart: {
+      pollIntervalMs: 2000,  // Check every 2 seconds
+      pollTimeoutMs: 600000, // 10 minute timeout
+    },
+  },
+});
+```
+
+**Source References:**
+- Poll interval: `src/decart-video-model.ts:196`
+- Poll timeout: `src/decart-video-model.ts:197`
+
+### Direct Orientation Control
+
+Override aspect ratio by setting orientation directly:
+
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-i2v'),
+  prompt: { image: imageData, text: 'Animate' },
+  providerOptions: {
+    decart: {
+      orientation: 'portrait',
+    },
+  },
+});
+```
+
+**Source Reference:** `src/decart-video-model.ts:27-28`
+
+## Comparison: Production vs Development
+
+| Feature | lucy-pro-i2v | lucy-dev-i2v |
+|---------|--------------|-------------|
+| Quality | High | Standard |
+| Speed | Standard | Faster |
+| Use Case | Production | Development/Testing |
+| API Interface | Identical | Identical |
+| Settings Support | Full | Full |
+
+## Error Handling
+
+```typescript
+try {
+  const imageData = fs.readFileSync('portrait.jpg');
+  
+  const { videos } = await generateVideo({
+    model: decart.video('lucy-pro-i2v'),
+    prompt: {
+      image: imageData,
+      text: 'The person waves hello',
+    },
+  });
+  
+  fs.writeFileSync('animated.mp4', videos[0].uint8Array);
+} catch (error) {
+  if (error.name === 'AI_APICallError') {
+    console.error('Animation failed:', error.message);
+  }
+  throw error;
+}
+```
+
+<Warning>
+  Common issues:
+  - Invalid image format or corrupted image data
+  - Image too large or too small
+  - Generation timeout (default: 5 minutes)
+  - Network errors during upload or download
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Motion Control" icon="route" href="/video/motion-control">
+    Control precise movement with trajectories
+  </Card>
+  <Card title="Text-to-Video" icon="wand-magic-sparkles" href="/video/text-to-video">
+    Generate videos from text prompts
+  </Card>
+  <Card title="Settings Reference" icon="sliders" href="/video/settings">
+    View all configuration options
+  </Card>
+  <Card title="Examples" icon="code" href="/video/examples">
+    Browse complete working examples
+  </Card>
+</CardGroup>

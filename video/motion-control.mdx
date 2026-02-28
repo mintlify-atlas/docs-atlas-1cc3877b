@@ -1,0 +1,399 @@
+---
+title: Motion Control
+description: Control camera and subject movement with trajectory-based motion control using lucy-motion
+---
+
+The `lucy-motion` model enables precise control over camera and subject movement in videos using trajectory points. This is ideal for creating videos with specific motion paths or camera movements.
+
+## Overview
+
+Trajectory-based motion control allows you to define keyframes that specify where the subject or camera should be at specific frames. The model interpolates smooth motion between these keyframes.
+
+<Note>
+  Trajectories use normalized coordinates (0.0 to 1.0) where:
+  - `x: 0.0` is the left edge, `x: 1.0` is the right edge
+  - `y: 0.0` is the top edge, `y: 1.0` is the bottom edge
+</Note>
+
+## Basic Usage
+
+<Steps>
+  <Step title="Import Dependencies">
+    ```typescript
+    import { decart } from '@decartai/ai-sdk-provider';
+    import { experimental_generateVideo as generateVideo } from 'ai';
+    import fs from 'fs';
+    ```
+  </Step>
+
+  <Step title="Define Trajectory">
+    Create an array of trajectory points:
+
+    ```typescript
+    const trajectory = [
+      { frame: 0, x: 0.5, y: 0.5 },   // Start at center
+      { frame: 12, x: 0.7, y: 0.9 },  // Move to bottom-right
+      { frame: 25, x: 0.3, y: 0.1 },  // Move to top-left
+    ];
+    ```
+
+    **Source Reference:** `src/decart-video-model.ts:18-22`
+  </Step>
+
+  <Step title="Generate Video">
+    ```typescript
+    const imageData = fs.readFileSync('input.jpg');
+    
+    const { videos } = await generateVideo({
+      model: decart.video('lucy-motion'),
+      prompt: {
+        image: imageData,
+        text: 'The subject moves along the specified path',
+      },
+      providerOptions: {
+        decart: {
+          trajectory,
+        },
+      },
+    });
+    ```
+
+    **Source Reference:** `examples/tasks/video-generation-motion.ts:7-23`
+  </Step>
+
+  <Step title="Save the Video">
+    ```typescript
+    fs.writeFileSync('motion.mp4', videos[0].uint8Array);
+    ```
+  </Step>
+</Steps>
+
+## Complete Example
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+import fs from 'fs';
+
+export async function generateWithMotion(imagePath: string) {
+  const imageData = fs.readFileSync(imagePath);
+  
+  const result = await generateVideo({
+    model: decart.video('lucy-motion'),
+    prompt: {
+      image: imageData,
+      text: 'The subject moves along the specified path',
+    },
+    providerOptions: {
+      decart: {
+        trajectory: [
+          { frame: 0, x: 0.5, y: 0.5 },
+          { frame: 12, x: 0.7, y: 0.9 },
+          { frame: 25, x: 0.3, y: 0.1 },
+        ],
+      },
+    },
+  });
+  
+  const filename = `motion-${Date.now()}.mp4`;
+  fs.writeFileSync(filename, result.videos[0].uint8Array);
+  console.log(`Motion video saved to ${filename}`);
+  
+  return result;
+}
+```
+
+## Trajectory Configuration
+
+### Trajectory Points
+
+Each trajectory point specifies the position at a specific frame:
+
+<ParamField path="frame" type="number" required>
+  Frame number (0-based). Frames beyond the video length will be ignored.
+</ParamField>
+
+<ParamField path="x" type="number" required>
+  Horizontal position as a normalized value (0.0 to 1.0).
+  - `0.0` = left edge
+  - `0.5` = center
+  - `1.0` = right edge
+</ParamField>
+
+<ParamField path="y" type="number" required>
+  Vertical position as a normalized value (0.0 to 1.0).
+  - `0.0` = top edge
+  - `0.5` = center
+  - `1.0` = bottom edge
+</ParamField>
+
+**Source Reference:** `src/decart-video-model.ts:22`
+
+### Example Trajectories
+
+<CodeGroup>
+```typescript Horizontal Pan
+const trajectory = [
+  { frame: 0, x: 0.0, y: 0.5 },   // Start at left
+  { frame: 25, x: 1.0, y: 0.5 },  // End at right
+];
+```
+
+```typescript Vertical Pan
+const trajectory = [
+  { frame: 0, x: 0.5, y: 0.0 },   // Start at top
+  { frame: 25, x: 0.5, y: 1.0 },  // End at bottom
+];
+```
+
+```typescript Circular Motion
+const trajectory = [
+  { frame: 0, x: 0.5, y: 0.3 },   // Top
+  { frame: 6, x: 0.7, y: 0.5 },   // Right
+  { frame: 12, x: 0.5, y: 0.7 },  // Bottom
+  { frame: 18, x: 0.3, y: 0.5 },  // Left
+  { frame: 24, x: 0.5, y: 0.3 },  // Back to top
+];
+```
+
+```typescript Diagonal Movement
+const trajectory = [
+  { frame: 0, x: 0.2, y: 0.2 },   // Top-left
+  { frame: 12, x: 0.5, y: 0.5 },  // Center
+  { frame: 25, x: 0.8, y: 0.8 },  // Bottom-right
+];
+```
+
+```typescript Zigzag Pattern
+const trajectory = [
+  { frame: 0, x: 0.2, y: 0.5 },
+  { frame: 8, x: 0.8, y: 0.3 },
+  { frame: 16, x: 0.2, y: 0.7 },
+  { frame: 25, x: 0.8, y: 0.5 },
+];
+```
+</CodeGroup>
+
+## Motion Types
+
+### Camera Motion
+
+Create camera pans, zooms, and tracking shots:
+
+```typescript
+// Slow zoom in
+const zoomTrajectory = [
+  { frame: 0, x: 0.5, y: 0.5 },   // Start centered
+  { frame: 25, x: 0.5, y: 0.5 },  // End centered (zoom handled by model)
+];
+
+// Camera tracking shot
+const trackingTrajectory = [
+  { frame: 0, x: 0.3, y: 0.5 },   // Follow subject from left
+  { frame: 12, x: 0.5, y: 0.5 },  // Center frame
+  { frame: 25, x: 0.7, y: 0.5 },  // Continue to right
+];
+```
+
+### Subject Motion
+
+Control subject movement through the frame:
+
+```typescript
+const walkingTrajectory = [
+  { frame: 0, x: 0.2, y: 0.6 },   // Start left side
+  { frame: 25, x: 0.8, y: 0.6 },  // Walk to right side
+];
+```
+
+## Advanced Configuration
+
+### Combining with Other Settings
+
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-motion'),
+  prompt: {
+    image: imageData,
+    text: 'Smooth camera movement following the subject',
+  },
+  aspectRatio: '16:9',
+  resolution: '1280x720',
+  seed: 42,
+  providerOptions: {
+    decart: {
+      trajectory: [
+        { frame: 0, x: 0.3, y: 0.5 },
+        { frame: 12, x: 0.5, y: 0.5 },
+        { frame: 25, x: 0.7, y: 0.5 },
+      ],
+      pollIntervalMs: 2000,
+      pollTimeoutMs: 600000,
+    },
+  },
+});
+```
+
+### Direct Orientation Override
+
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-motion'),
+  prompt: { image: imageData, text: 'Motion path' },
+  providerOptions: {
+    decart: {
+      orientation: 'portrait',
+      trajectory: [
+        { frame: 0, x: 0.5, y: 0.2 },
+        { frame: 25, x: 0.5, y: 0.8 },
+      ],
+    },
+  },
+});
+```
+
+**Source Reference:** `src/decart-video-model.ts:27-28`
+
+## How Trajectories Are Processed
+
+The trajectory array is serialized to JSON and sent to the API:
+
+```typescript
+// Internal processing (from source code)
+if (decartOptions.trajectory != null) {
+  formData.append('trajectory', JSON.stringify(decartOptions.trajectory));
+}
+```
+
+**Source Reference:** `src/decart-video-model.ts:169-171`
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Trajectory Planning">
+    - **Start with keyframes**: Define key positions first, then add intermediate points for smoothness
+    - **Spacing matters**: More points = smoother motion, but too many can be redundant
+    - **Frame distribution**: Space keyframes evenly for consistent speed, or vary spacing for acceleration/deceleration
+    - **Test increments**: Start with 2-3 keyframes, add more if motion isn't smooth enough
+  </Accordion>
+
+  <Accordion title="Motion Smoothness">
+    - Use at least 3-4 keyframes for complex paths
+    - Avoid sudden jumps between consecutive frames
+    - Keep position changes gradual between keyframes
+    - Test with different frame intervals to find the right balance
+  </Accordion>
+
+  <Accordion title="Coordinate System">
+    - Remember: (0.5, 0.5) is always the center
+    - Use values beyond 0.0-1.0 sparingly (may cause clipping)
+    - Consider the aspect ratio when planning diagonal movements
+    - Test coordinates visually to ensure they match your intent
+  </Accordion>
+
+  <Accordion title="Performance">
+    - Motion control videos may take longer to generate
+    - Increase `pollTimeoutMs` for complex trajectories
+    - Use `lucy-dev-i2v` first to test trajectory concepts
+    - Complex trajectories don't necessarily mean better results
+  </Accordion>
+</AccordionGroup>
+
+## Common Patterns
+
+### Dynamic Camera Following Subject
+
+```typescript
+const followTrajectory = [
+  { frame: 0, x: 0.4, y: 0.5 },   // Subject enters left
+  { frame: 8, x: 0.5, y: 0.5 },   // Track to center
+  { frame: 16, x: 0.6, y: 0.5 },  // Continue tracking
+  { frame: 25, x: 0.7, y: 0.5 },  // Exit right
+];
+```
+
+### Reveal Effect
+
+```typescript
+const revealTrajectory = [
+  { frame: 0, x: 0.8, y: 0.5 },   // Start off-frame right
+  { frame: 15, x: 0.5, y: 0.5 },  // Move to center
+  { frame: 25, x: 0.5, y: 0.5 },  // Hold at center
+];
+```
+
+### Dramatic Sweep
+
+```typescript
+const sweepTrajectory = [
+  { frame: 0, x: 0.2, y: 0.2 },   // Start top-left
+  { frame: 8, x: 0.8, y: 0.2 },   // Sweep to top-right
+  { frame: 16, x: 0.8, y: 0.8 },  // Down to bottom-right
+  { frame: 25, x: 0.2, y: 0.8 },  // Complete to bottom-left
+];
+```
+
+## Error Handling
+
+```typescript
+try {
+  const imageData = fs.readFileSync('scene.jpg');
+  
+  const { videos } = await generateVideo({
+    model: decart.video('lucy-motion'),
+    prompt: {
+      image: imageData,
+      text: 'Dynamic camera movement',
+    },
+    providerOptions: {
+      decart: {
+        trajectory: [
+          { frame: 0, x: 0.3, y: 0.5 },
+          { frame: 25, x: 0.7, y: 0.5 },
+        ],
+      },
+    },
+  });
+  
+  fs.writeFileSync('motion.mp4', videos[0].uint8Array);
+} catch (error) {
+  if (error.name === 'AI_APICallError') {
+    console.error('Motion generation failed:', error.message);
+  }
+  throw error;
+}
+```
+
+<Warning>
+  Common issues:
+  - Invalid trajectory coordinates (outside 0.0-1.0 range)
+  - Frame numbers exceeding video length
+  - Too few trajectory points for desired motion
+  - Generation timeout with complex trajectories
+</Warning>
+
+## Comparison with Other Models
+
+| Feature | lucy-motion | lucy-pro-i2v | lucy-pro-t2v |
+|---------|------------|--------------|-------------|
+| Trajectory Control | Yes | No | No |
+| Input Required | Image | Image | Text only |
+| Motion Precision | High | Low | Low |
+| Use Case | Precise control | Animation | Creation |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Image-to-Video" icon="image" href="/video/image-to-video">
+    Learn basic image animation
+  </Card>
+  <Card title="Settings Reference" icon="sliders" href="/video/settings">
+    View all configuration options
+  </Card>
+  <Card title="Examples" icon="code" href="/video/examples">
+    Browse complete working examples
+  </Card>
+  <Card title="Text-to-Video" icon="wand-magic-sparkles" href="/video/text-to-video">
+    Generate videos from text
+  </Card>
+</CardGroup>

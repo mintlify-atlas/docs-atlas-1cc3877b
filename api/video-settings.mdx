@@ -1,0 +1,283 @@
+---
+title: Video Settings
+description: Configuration options for Decart video generation
+---
+
+## Overview
+
+Decart video models support standard AI SDK video generation settings with some limitations. This page describes the supported and unsupported settings for all video models.
+
+## Supported Settings
+
+### prompt
+
+<ParamField path="prompt" type="string" optional>
+  Text description to guide video generation.
+  
+  - **Required** for `lucy-pro-t2v` (text-to-video)
+  - **Optional** for image-to-video models (provides additional guidance)
+</ParamField>
+
+```typescript
+import { experimental_generateVideo } from 'ai';
+import { decart } from '@ai-sdk/decart';
+
+// Text-to-video
+const { video } = await experimental_generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'Ocean waves gently rolling onto a sandy beach'
+});
+
+// Image-to-video with optional prompt
+const { video: guided } = await experimental_generateVideo({
+  model: decart.video('lucy-pro-i2v'),
+  image: { type: 'url', url: 'https://example.com/scene.jpg' },
+  prompt: 'Slow camera zoom in'
+});
+```
+
+### seed
+
+<ParamField path="seed" type="number" optional>
+  Random seed for reproducible video generation.
+  
+  Using the same seed with the same inputs will produce the same video.
+</ParamField>
+
+```typescript
+import { experimental_generateVideo } from 'ai';
+import { decart } from '@ai-sdk/decart';
+
+const { video } = await experimental_generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A time-lapse of clouds moving',
+  seed: 12345
+});
+```
+
+### resolution
+
+<ParamField path="resolution" type="'1280x720' | '640x480'" optional>
+  Video resolution.
+  
+  Only two resolutions are supported:
+  - `"1280x720"` - 720p (default)
+  - `"640x480"` - 480p
+  
+  Other resolutions will produce a warning and be ignored.
+</ParamField>
+
+```typescript
+import { experimental_generateVideo } from 'ai';
+import { decart } from '@ai-sdk/decart';
+
+const { video } = await experimental_generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A landscape scene',
+  resolution: '1280x720'
+});
+```
+
+### aspectRatio
+
+<ParamField path="aspectRatio" type="'16:9' | '9:16'" optional>
+  Aspect ratio of the generated video.
+  
+  Only two aspect ratios are supported:
+  - `"16:9"` - Landscape orientation
+  - `"9:16"` - Portrait orientation
+  
+  Other aspect ratios will produce a warning and be ignored.
+</ParamField>
+
+```typescript
+import { experimental_generateVideo } from 'ai';
+import { decart } from '@ai-sdk/decart';
+
+// Landscape
+const { video: landscape } = await experimental_generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'Wide panoramic shot',
+  aspectRatio: '16:9'
+});
+
+// Portrait
+const { video: portrait } = await experimental_generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'Vertical video for mobile',
+  aspectRatio: '9:16'
+});
+```
+
+### image
+
+<ParamField path="image" type="ImageInput" optional>
+  Source image for image-to-video generation.
+  
+  - **Required** for `lucy-pro-i2v`, `lucy-dev-i2v`, and `lucy-motion`
+  - **Not used** for `lucy-pro-t2v`
+  
+  Supports two input types:
+  - URL reference: `{ type: 'url', url: string }`
+  - Binary data: `{ type: 'binary', data: Uint8Array | string, mediaType: string }`
+</ParamField>
+
+```typescript
+import { experimental_generateVideo } from 'ai';
+import { decart } from '@ai-sdk/decart';
+import { readFileSync } from 'fs';
+
+// Using URL
+const { video: fromUrl } = await experimental_generateVideo({
+  model: decart.video('lucy-pro-i2v'),
+  image: {
+    type: 'url',
+    url: 'https://example.com/image.jpg'
+  }
+});
+
+// Using binary data
+const imageData = readFileSync('input.jpg');
+const { video: fromBinary } = await experimental_generateVideo({
+  model: decart.video('lucy-pro-i2v'),
+  image: {
+    type: 'binary',
+    data: new Uint8Array(imageData),
+    mediaType: 'image/jpeg'
+  }
+});
+
+// Using base64 string
+const { video: fromBase64 } = await experimental_generateVideo({
+  model: decart.video('lucy-pro-i2v'),
+  image: {
+    type: 'binary',
+    data: 'base64EncodedImageData...',
+    mediaType: 'image/jpeg'
+  }
+});
+```
+
+## Unsupported Settings
+
+The following settings are not supported and will produce warnings:
+
+### fps
+
+<ParamField path="fps" type="number" optional>
+  **Not supported.** Frame rate cannot be configured.
+  
+  Specifying this parameter will produce a warning of type `unsupported`.
+</ParamField>
+
+### duration
+
+<ParamField path="duration" type="number" optional>
+  **Not supported.** Video duration cannot be configured.
+  
+  Specifying this parameter will produce a warning of type `unsupported`.
+</ParamField>
+
+```typescript
+import { experimental_generateVideo } from 'ai';
+import { decart } from '@ai-sdk/decart';
+
+const result = await experimental_generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A scene',
+  fps: 30,      // Will produce warning
+  duration: 5   // Will produce warning
+});
+
+if (result.warnings && result.warnings.length > 0) {
+  result.warnings.forEach(warning => {
+    console.log(`Warning: ${warning.type} - ${warning.feature}`);
+  });
+}
+```
+
+## Provider-Specific Options
+
+Decart video models support additional options via the `providerOptions.decart` parameter. See [Video Provider Options](/api/video-provider-options) for details.
+
+```typescript
+import { experimental_generateVideo } from 'ai';
+import { decart } from '@ai-sdk/decart';
+
+const { video } = await experimental_generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A scene',
+  providerOptions: {
+    decart: {
+      orientation: 'landscape',
+      pollIntervalMs: 2000,
+      pollTimeoutMs: 600000
+    }
+  }
+});
+```
+
+## Standard Request Options
+
+### headers
+
+<ParamField path="headers" type="Record<string, string>" optional>
+  Custom HTTP headers to include with the request.
+</ParamField>
+
+```typescript
+const { video } = await experimental_generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A scene',
+  headers: {
+    'X-Custom-Header': 'value'
+  }
+});
+```
+
+### abortSignal
+
+<ParamField path="abortSignal" type="AbortSignal" optional>
+  AbortSignal to cancel the request.
+  
+  Cancels both the initial submission and polling process.
+</ParamField>
+
+```typescript
+const controller = new AbortController();
+
+const promise = experimental_generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A scene',
+  abortSignal: controller.signal
+});
+
+// Cancel after 30 seconds
+setTimeout(() => controller.abort(), 30000);
+```
+
+## Handling Warnings
+
+When using unsupported settings, the model returns warnings in the response:
+
+```typescript
+import { experimental_generateVideo } from 'ai';
+import { decart } from '@ai-sdk/decart';
+
+const result = await experimental_generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A scene',
+  fps: 60,              // Unsupported
+  aspectRatio: '4:3'    // Unsupported
+});
+
+if (result.warnings && result.warnings.length > 0) {
+  result.warnings.forEach(warning => {
+    console.log(`Warning Type: ${warning.type}`);
+    console.log(`Feature: ${warning.feature}`);
+    if (warning.details) {
+      console.log(`Details: ${warning.details}`);
+    }
+  });
+}
+```

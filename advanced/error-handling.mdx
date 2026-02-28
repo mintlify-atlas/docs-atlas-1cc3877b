@@ -1,0 +1,559 @@
+---
+title: Error Handling
+description: Learn how to handle errors from the Decart provider including API errors, timeouts, validation failures, and common troubleshooting strategies.
+---
+
+The Decart provider uses the AI SDK's error handling system and throws specific error types for different failure scenarios. This guide covers common errors and how to handle them.
+
+## Error Types
+
+### AISDKError
+
+The primary error type used by the Decart provider. All runtime errors are instances of `AISDKError` from the `@ai-sdk/provider` package.
+
+```typescript
+import { AISDKError } from '@ai-sdk/provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+import { decart } from '@decartai/ai-sdk-provider';
+
+try {
+  const { videos } = await generateVideo({
+    model: decart.video('lucy-pro-t2v'),
+    prompt: 'A beautiful sunset',
+  });
+} catch (error) {
+  if (error instanceof AISDKError) {
+    console.error('AI SDK Error:', error.name);
+    console.error('Message:', error.message);
+  }
+}
+```
+
+### NoSuchModelError
+
+Thrown when attempting to use an unsupported model type (e.g., trying to call `languageModel()` or `textEmbeddingModel()` on the Decart provider).
+
+```typescript
+import { NoSuchModelError } from '@ai-sdk/provider';
+import { decart } from '@decartai/ai-sdk-provider';
+
+try {
+  // This will throw NoSuchModelError
+  const model = decart.languageModel('gpt-4');
+} catch (error) {
+  if (error instanceof NoSuchModelError) {
+    console.error('Model not supported:', error.modelId);
+    console.error('Model type:', error.modelType);
+  }
+}
+```
+
+<Note>
+  The Decart provider only supports image and video models. Language models and text embedding models are not supported.
+</Note>
+
+## Common Error Scenarios
+
+### API Authentication Errors
+
+Occur when the API key is missing, invalid, or expired.
+
+**Error pattern:**
+```typescript
+{
+  name: "AI_APICallError",
+  message: "POST https://api.decart.ai/v1/jobs/lucy-pro-t2v failed with status 401: ..."
+}
+```
+
+**Solution:**
+
+```typescript
+import { AISDKError } from '@ai-sdk/provider';
+import { decart } from '@decartai/ai-sdk-provider';
+
+try {
+  const { videos } = await generateVideo({
+    model: decart.video('lucy-pro-t2v'),
+    prompt: 'Test video',
+  });
+} catch (error) {
+  if (error instanceof AISDKError && error.message.includes('401')) {
+    console.error('Authentication failed. Please check your DECART_API_KEY.');
+    console.error('Set it in your environment: export DECART_API_KEY=your-key');
+  }
+}
+```
+
+<Warning>
+  Ensure your `DECART_API_KEY` environment variable is set or pass `apiKey` explicitly when creating the provider.
+</Warning>
+
+### Timeout Errors
+
+Occur when video generation takes longer than the configured `pollTimeoutMs`.
+
+**Error pattern:**
+```typescript
+{
+  name: "AI_APICallError",
+  message: "Video generation timed out after 300000ms"
+}
+```
+
+**Solution:**
+
+```typescript
+import { AISDKError } from '@ai-sdk/provider';
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+
+try {
+  const { videos } = await generateVideo({
+    model: decart.video('lucy-pro-t2v'),
+    prompt: 'Complex scene',
+    providerOptions: {
+      decart: {
+        pollTimeoutMs: 600000, // Increase to 10 minutes
+      },
+    },
+  });
+} catch (error) {
+  if (
+    error instanceof AISDKError &&
+    error.message.includes('timed out')
+  ) {
+    console.error('Video generation timed out.');
+    console.error('Try increasing pollTimeoutMs or simplifying the prompt.');
+  }
+}
+```
+
+### Job Failure Errors
+
+Occur when the video generation job fails on the server side.
+
+**Error pattern:**
+```typescript
+{
+  name: "AI_APICallError",
+  message: "Video generation job abc-123 failed"
+}
+```
+
+**Solution:**
+
+```typescript
+import { AISDKError } from '@ai-sdk/provider';
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+
+try {
+  const { videos } = await generateVideo({
+    model: decart.video('lucy-pro-t2v'),
+    prompt: 'Test video',
+  });
+} catch (error) {
+  if (
+    error instanceof AISDKError &&
+    error.message.includes('job') &&
+    error.message.includes('failed')
+  ) {
+    console.error('Video generation job failed on the server.');
+    console.error('This may be due to invalid parameters or service issues.');
+    console.error('Try again with different parameters or contact support.');
+  }
+}
+```
+
+### Abort Signal Errors
+
+Occur when a request is cancelled via an `AbortSignal`.
+
+**Error pattern:**
+```typescript
+{
+  name: "AI_APICallError",
+  message: "Video generation request was aborted"
+}
+```
+
+**Solution:**
+
+```typescript
+import { AISDKError } from '@ai-sdk/provider';
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+
+const controller = new AbortController();
+
+// Cancel after 30 seconds
+setTimeout(() => controller.abort(), 30000);
+
+try {
+  const { videos } = await generateVideo({
+    model: decart.video('lucy-pro-t2v'),
+    prompt: 'Test video',
+    abortSignal: controller.signal,
+  });
+} catch (error) {
+  if (
+    error instanceof AISDKError &&
+    error.message.includes('aborted')
+  ) {
+    console.log('Video generation was cancelled by user.');
+  }
+}
+```
+
+### Network Errors
+
+Occur when the network request fails (connection issues, DNS failures, etc.).
+
+**Error pattern:**
+```typescript
+{
+  name: "AI_APICallError",
+  message: "GET https://api.decart.ai/v1/jobs/abc-123 failed with status 500: ..."
+}
+```
+
+**Solution:**
+
+```typescript
+import { AISDKError } from '@ai-sdk/provider';
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+
+async function generateWithRetry(maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const { videos } = await generateVideo({
+        model: decart.video('lucy-pro-t2v'),
+        prompt: 'Test video',
+      });
+      return videos;
+    } catch (error) {
+      if (error instanceof AISDKError && attempt < maxRetries) {
+        console.log(`Attempt ${attempt} failed, retrying...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        continue;
+      }
+      throw error;
+    }
+  }
+}
+
+try {
+  const videos = await generateWithRetry();
+  console.log('Video generated successfully!');
+} catch (error) {
+  console.error('Failed after all retries:', error);
+}
+```
+
+## Warnings
+
+The Decart provider returns warnings for unsupported settings that don't cause failures but are ignored.
+
+### Unsupported Settings
+
+When you provide settings that aren't supported by the model, warnings are included in the response:
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+
+const { videos, warnings } = await generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'Test video',
+  aspectRatio: '4:3', // Not supported
+  fps: 60, // Not supported
+  duration: 10, // Not supported
+});
+
+if (warnings && warnings.length > 0) {
+  console.warn('Warnings:');
+  for (const warning of warnings) {
+    if (warning.type === 'unsupported') {
+      console.warn(`- ${warning.feature}: ${warning.details || 'Not supported'}`);
+    }
+  }
+}
+
+// Output:
+// Warnings:
+// - aspectRatio: Only 16:9 and 9:16 aspect ratios are supported.
+// - fps
+// - duration
+```
+
+<Note>
+  Warnings don't prevent video generation. The unsupported parameters are simply ignored, and generation proceeds with supported settings.
+</Note>
+
+## Best Practices
+
+### Comprehensive Error Handling
+
+Implement robust error handling for production applications:
+
+```typescript
+import { AISDKError, NoSuchModelError } from '@ai-sdk/provider';
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+
+async function safeGenerateVideo(prompt: string) {
+  try {
+    const { videos, warnings } = await generateVideo({
+      model: decart.video('lucy-pro-t2v'),
+      prompt,
+      providerOptions: {
+        decart: {
+          pollTimeoutMs: 600000,
+        },
+      },
+    });
+
+    // Log warnings
+    if (warnings && warnings.length > 0) {
+      console.warn('Generation completed with warnings:', warnings);
+    }
+
+    return { success: true, videos };
+  } catch (error) {
+    // Handle specific error types
+    if (error instanceof NoSuchModelError) {
+      return {
+        success: false,
+        error: 'Model not supported',
+        details: error.message,
+      };
+    }
+
+    if (error instanceof AISDKError) {
+      // Authentication errors
+      if (error.message.includes('401')) {
+        return {
+          success: false,
+          error: 'Authentication failed',
+          details: 'Invalid or missing API key',
+        };
+      }
+
+      // Timeout errors
+      if (error.message.includes('timed out')) {
+        return {
+          success: false,
+          error: 'Timeout',
+          details: 'Video generation took too long',
+        };
+      }
+
+      // Job failure errors
+      if (error.message.includes('failed')) {
+        return {
+          success: false,
+          error: 'Job failed',
+          details: 'Server-side generation failure',
+        };
+      }
+
+      // Abort errors
+      if (error.message.includes('aborted')) {
+        return {
+          success: false,
+          error: 'Cancelled',
+          details: 'Request was cancelled',
+        };
+      }
+
+      // Generic API errors
+      return {
+        success: false,
+        error: 'API error',
+        details: error.message,
+      };
+    }
+
+    // Unknown errors
+    return {
+      success: false,
+      error: 'Unknown error',
+      details: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+// Usage
+const result = await safeGenerateVideo('A beautiful sunset');
+if (result.success) {
+  console.log('Success:', result.videos);
+} else {
+  console.error('Error:', result.error, result.details);
+}
+```
+
+### Retry Strategy
+
+Implement exponential backoff for transient errors:
+
+```typescript
+import { AISDKError } from '@ai-sdk/provider';
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+
+async function generateVideoWithRetry(
+  prompt: string,
+  maxRetries = 3,
+  baseDelay = 1000,
+) {
+  let lastError: Error | undefined;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await generateVideo({
+        model: decart.video('lucy-pro-t2v'),
+        prompt,
+      });
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      // Don't retry on authentication errors or aborts
+      if (
+        error instanceof AISDKError &&
+        (error.message.includes('401') || error.message.includes('aborted'))
+      ) {
+        throw error;
+      }
+
+      // Retry on other errors
+      if (attempt < maxRetries) {
+        const delay = baseDelay * Math.pow(2, attempt - 1);
+        console.log(
+          `Attempt ${attempt} failed, retrying in ${delay}ms...`,
+        );
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  throw lastError;
+}
+
+// Usage
+try {
+  const { videos } = await generateVideoWithRetry('A beautiful sunset');
+  console.log('Success!');
+} catch (error) {
+  console.error('Failed after all retries:', error);
+}
+```
+
+### Validation Before API Calls
+
+Validate inputs before making API calls to catch errors early:
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+
+function validateVideoOptions(options: {
+  prompt: string;
+  aspectRatio?: string;
+  resolution?: string;
+}) {
+  const errors: string[] = [];
+
+  // Validate prompt
+  if (!options.prompt || options.prompt.trim().length === 0) {
+    errors.push('Prompt cannot be empty');
+  }
+
+  // Validate aspect ratio
+  const supportedAspectRatios = ['16:9', '9:16'];
+  if (
+    options.aspectRatio &&
+    !supportedAspectRatios.includes(options.aspectRatio)
+  ) {
+    errors.push(
+      `Aspect ratio must be one of: ${supportedAspectRatios.join(', ')}`,
+    );
+  }
+
+  // Validate resolution
+  const supportedResolutions = ['1280x720', '854x480'];
+  if (
+    options.resolution &&
+    !supportedResolutions.includes(options.resolution)
+  ) {
+    errors.push(
+      `Resolution must be one of: ${supportedResolutions.join(', ')}`,
+    );
+  }
+
+  return errors;
+}
+
+// Usage
+const options = {
+  prompt: 'A beautiful sunset',
+  aspectRatio: '16:9',
+  resolution: '1280x720',
+};
+
+const validationErrors = validateVideoOptions(options);
+if (validationErrors.length > 0) {
+  console.error('Validation errors:', validationErrors);
+} else {
+  const { videos } = await generateVideo({
+    model: decart.video('lucy-pro-t2v'),
+    ...options,
+  });
+}
+```
+
+## Debugging Tips
+
+### Enable Request Logging
+
+Use a custom fetch function to log all requests:
+
+```typescript
+import { createDecart } from '@decartai/ai-sdk-provider';
+import type { FetchFunction } from '@ai-sdk/provider-utils';
+
+const loggingFetch: FetchFunction = async (input, init) => {
+  console.log('Request:', {
+    url: input,
+    method: init?.method,
+    headers: init?.headers,
+  });
+
+  const response = await fetch(input, init);
+
+  console.log('Response:', {
+    status: response.status,
+    headers: Object.fromEntries(response.headers.entries()),
+  });
+
+  return response;
+};
+
+const decart = createDecart({
+  fetch: loggingFetch,
+});
+```
+
+### Check API Status
+
+If you're experiencing errors, verify the Decart API status and your account:
+
+1. Check the [Decart Status Page](https://decart.ai) for any service disruptions
+2. Verify your API key is valid and hasn't expired
+3. Check your account quota and usage limits
+
+## Related Resources
+
+- [Configuration](/advanced/configuration) - Learn about provider configuration options
+- [Provider Options](/advanced/provider-options) - Learn about video-specific options including timeout settings

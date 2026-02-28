@@ -1,0 +1,223 @@
+---
+title: Video Models
+description: Available video generation models in the Decart provider
+---
+
+## Model IDs
+
+```typescript
+type DecartVideoModelId =
+  | "lucy-pro-t2v"
+  | "lucy-pro-i2v"
+  | "lucy-dev-i2v"
+  | "lucy-motion";
+```
+
+The Decart provider supports four video generation models with different capabilities.
+
+## Available Models
+
+### lucy-pro-t2v
+
+Text-to-video generation model powered by Lucy Pro.
+
+**Capabilities:**
+- Text-to-video generation
+- Seed-based reproducibility
+- Resolution control (720p, 480p)
+- Aspect ratio control (16:9, 9:16)
+
+**Use Cases:**
+- Generating videos from text descriptions
+- Creating video content without source images
+
+```typescript
+import { createDecart } from '@ai-sdk/decart';
+import { experimental_generateVideo } from 'ai';
+
+const decart = createDecart();
+
+const { video } = await experimental_generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'Waves crashing on a beach at sunset'
+});
+```
+
+### lucy-pro-i2v
+
+Image-to-video generation model powered by Lucy Pro.
+
+**Capabilities:**
+- Image-to-video generation
+- Seed-based reproducibility
+- Resolution control (720p, 480p)
+- Aspect ratio control (16:9, 9:16)
+- Optional text prompt for guidance
+
+**Use Cases:**
+- Animating static images
+- Creating videos from existing artwork
+- Adding motion to photographs
+
+```typescript
+import { createDecart } from '@ai-sdk/decart';
+import { experimental_generateVideo } from 'ai';
+import { readFileSync } from 'fs';
+
+const decart = createDecart();
+
+const imageData = readFileSync('input.jpg');
+
+const { video } = await experimental_generateVideo({
+  model: decart.video('lucy-pro-i2v'),
+  image: {
+    type: 'binary',
+    data: new Uint8Array(imageData),
+    mediaType: 'image/jpeg'
+  },
+  prompt: 'Gentle camera pan across the scene'
+});
+```
+
+### lucy-dev-i2v
+
+Development version of the image-to-video model.
+
+**Capabilities:**
+- Same as `lucy-pro-i2v`
+- May include experimental features
+- May have different performance characteristics
+
+**Use Cases:**
+- Testing new features
+- Development and experimentation
+
+```typescript
+import { createDecart } from '@ai-sdk/decart';
+import { experimental_generateVideo } from 'ai';
+
+const decart = createDecart();
+
+const { video } = await experimental_generateVideo({
+  model: decart.video('lucy-dev-i2v'),
+  image: {
+    type: 'url',
+    url: 'https://example.com/image.jpg'
+  }
+});
+```
+
+### lucy-motion
+
+Motion-controlled video generation model.
+
+**Capabilities:**
+- Image-to-video with trajectory control
+- Define specific motion paths
+- Frame-by-frame motion control
+- Resolution and aspect ratio control
+
+**Use Cases:**
+- Creating videos with specific camera movements
+- Precise control over motion paths
+- Complex animation sequences
+
+**Special Settings:**
+- Requires `trajectory` parameter in `providerOptions.decart`
+- Trajectory defines motion across frames
+
+```typescript
+import { createDecart } from '@ai-sdk/decart';
+import { experimental_generateVideo } from 'ai';
+
+const decart = createDecart();
+
+const { video } = await experimental_generateVideo({
+  model: decart.video('lucy-motion'),
+  image: {
+    type: 'url',
+    url: 'https://example.com/image.jpg'
+  },
+  providerOptions: {
+    decart: {
+      trajectory: [
+        { frame: 0, x: 0.5, y: 0.5 },
+        { frame: 15, x: 0.6, y: 0.4 },
+        { frame: 30, x: 0.7, y: 0.5 }
+      ]
+    }
+  }
+});
+```
+
+## Model Specifications
+
+<ResponseField name="specificationVersion" type="string" default="v3">
+  All Decart video models implement the AI SDK v3 experimental specification.
+</ResponseField>
+
+<ResponseField name="maxVideosPerCall" type="number" default="1">
+  Each generation call produces exactly one video.
+</ResponseField>
+
+<ResponseField name="provider" type="string" default="decart.video">
+  Provider identifier for the video models.
+</ResponseField>
+
+## Comparison Matrix
+
+| Feature | lucy-pro-t2v | lucy-pro-i2v | lucy-dev-i2v | lucy-motion |
+|---------|--------------|--------------|--------------|-------------|
+| Text-to-video | ✓ | — | — | — |
+| Image-to-video | — | ✓ | ✓ | ✓ |
+| Trajectory control | — | — | — | ✓ |
+| Resolution control | ✓ | ✓ | ✓ | ✓ |
+| Aspect ratio control | ✓ | ✓ | ✓ | ✓ |
+| Seed support | ✓ | ✓ | ✓ | ✓ |
+
+## Generation Process
+
+All video models use an asynchronous job-based generation process:
+
+1. **Job Submission** - Request is submitted and returns a job ID
+2. **Polling** - Status is polled until completion
+3. **Download** - Video content is downloaded when ready
+
+The polling behavior can be customized using provider options:
+
+```typescript
+const { video } = await experimental_generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A video',
+  providerOptions: {
+    decart: {
+      pollIntervalMs: 2000,  // Poll every 2 seconds
+      pollTimeoutMs: 600000  // Timeout after 10 minutes
+    }
+  }
+});
+```
+
+## Response Format
+
+All video models return the same response structure:
+
+```typescript
+{
+  videos: [{
+    type: 'binary',
+    data: Uint8Array,
+    mediaType: 'video/mp4'
+  }],
+  warnings: Array<{
+    type: 'unsupported',
+    feature: string,
+    details?: string
+  }>,
+  response: {
+    timestamp: Date,
+    modelId: string,
+    headers: Record<string, string>
+  }
+}
+```

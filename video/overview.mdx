@@ -1,0 +1,109 @@
+---
+title: Video Generation Overview
+description: Generate videos from text prompts, images, and motion trajectories with Decart's Lucy video models
+---
+
+The Decart provider offers powerful video generation capabilities through the AI SDK's experimental video generation API. You can create videos from text descriptions, animate images, or control precise motion paths using trajectory-based generation.
+
+## Video Generation Capabilities
+
+Decart provides four specialized video models, each optimized for different use cases:
+
+<CardGroup cols={2}>
+  <Card title="Text-to-Video" icon="wand-magic-sparkles" href="/video/text-to-video">
+    Generate videos from text prompts using `lucy-pro-t2v`
+  </Card>
+  <Card title="Image-to-Video" icon="image" href="/video/image-to-video">
+    Animate images into videos with `lucy-pro-i2v` and `lucy-dev-i2v`
+  </Card>
+  <Card title="Motion Control" icon="route" href="/video/motion-control">
+    Control camera and subject movement with `lucy-motion` trajectories
+  </Card>
+  <Card title="Settings" icon="sliders" href="/video/settings">
+    Configure aspect ratio, resolution, and seed settings
+  </Card>
+</CardGroup>
+
+## Quick Start
+
+Generate a video from a text prompt:
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+import fs from 'fs';
+
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A man is riding a horse in a field',
+});
+
+fs.writeFileSync('video.mp4', videos[0].uint8Array);
+```
+
+## Model Selection Guide
+
+Choose the right model based on your use case:
+
+| Model | Input Type | Use Case | Best For |
+|-------|-----------|----------|----------|
+| `lucy-pro-t2v` | Text only | Text-to-video generation | Creating videos from descriptions |
+| `lucy-pro-i2v` | Image + text | Image animation | High-quality image-to-video conversion |
+| `lucy-dev-i2v` | Image + text | Image animation | Development and testing |
+| `lucy-motion` | Image + text + trajectory | Motion control | Precise camera and subject movement |
+
+<Note>
+  All video models support 16:9 (landscape) and 9:16 (portrait) aspect ratios.
+</Note>
+
+## How It Works
+
+Video generation with Decart follows a job-based asynchronous workflow:
+
+<Steps>
+  <Step title="Submit Request">
+    Your video generation request is submitted to the Decart API with prompt, image (if applicable), and settings.
+  </Step>
+  
+  <Step title="Job Processing">
+    The API returns a job ID and begins processing your video. The SDK automatically polls the job status every 1.5 seconds.
+  </Step>
+  
+  <Step title="Video Retrieval">
+    When the job completes, the SDK downloads the generated video as an MP4 file and returns it as a `Uint8Array`.
+  </Step>
+</Steps>
+
+<Note>
+  The default timeout for video generation is 5 minutes. You can customize polling behavior using `providerOptions.decart.pollIntervalMs` and `pollTimeoutMs`.
+</Note>
+
+## Response Format
+
+All video generation calls return a result object with the following structure:
+
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A sunset over the ocean',
+});
+
+// Access the video data
+const videoData = videos[0].uint8Array;  // Uint8Array
+const mimeType = videos[0].mimeType;     // "video/mp4"
+```
+
+<Warning>
+  Video generation is computationally intensive and may take several minutes depending on the model and settings.
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="View All Models" icon="list" href="/video/models">
+    Explore detailed specifications for each video model
+  </Card>
+  <Card title="See Examples" icon="code" href="/video/examples">
+    Browse complete working examples
+  </Card>
+</CardGroup>

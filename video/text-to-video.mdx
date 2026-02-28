@@ -1,0 +1,273 @@
+---
+title: Text-to-Video
+description: Generate videos from text prompts using lucy-pro-t2v
+---
+
+The `lucy-pro-t2v` model generates videos directly from text descriptions without requiring an input image. This is ideal for creating videos from scratch based on natural language prompts.
+
+## Basic Usage
+
+<Steps>
+  <Step title="Import Dependencies">
+    Import the Decart provider and the experimental video generation function:
+
+    ```typescript
+    import { decart } from '@decartai/ai-sdk-provider';
+    import { experimental_generateVideo as generateVideo } from 'ai';
+    import fs from 'fs';
+    ```
+  </Step>
+
+  <Step title="Generate Video">
+    Call `generateVideo` with the `lucy-pro-t2v` model and your text prompt:
+
+    ```typescript
+    const { videos } = await generateVideo({
+      model: decart.video('lucy-pro-t2v'),
+      prompt: 'A man is riding a horse in a field',
+    });
+    ```
+
+    **Source Reference:** `examples/tasks/video-generation-t2v.ts:7-10`
+  </Step>
+
+  <Step title="Save the Video">
+    Write the generated video to a file:
+
+    ```typescript
+    fs.writeFileSync('video.mp4', videos[0].uint8Array);
+    ```
+  </Step>
+</Steps>
+
+## Complete Example
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+import fs from 'fs';
+
+export async function generateTextToVideo() {
+  const result = await generateVideo({
+    model: decart.video('lucy-pro-t2v'),
+    prompt: 'A man is riding a horse in a field',
+  });
+  
+  const filename = `video-${Date.now()}.mp4`;
+  fs.writeFileSync(filename, result.videos[0].uint8Array);
+  console.log(`Video saved to ${filename}`);
+  
+  return result;
+}
+```
+
+## Customizing Output
+
+### Aspect Ratio
+
+Control video orientation with the `aspectRatio` parameter:
+
+<CodeGroup>
+```typescript Landscape (16:9)
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A sunset over the ocean',
+  aspectRatio: '16:9',
+});
+```
+
+```typescript Portrait (9:16)
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A tall waterfall cascading down a cliff',
+  aspectRatio: '9:16',
+});
+```
+</CodeGroup>
+
+<Note>
+  The `aspectRatio` parameter is converted to an `orientation` value (`landscape` or `portrait`) in the API request.
+  
+  **Source Reference:** `src/decart-video-model.ts:110-122`
+</Note>
+
+### Resolution
+
+Set video resolution using the `resolution` parameter:
+
+<CodeGroup>
+```typescript 720p (High Quality)
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A city skyline at night',
+  resolution: '1280x720',
+});
+```
+
+```typescript 480p (Faster Generation)
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A city skyline at night',
+  resolution: '854x480',
+});
+```
+</CodeGroup>
+
+<Warning>
+  Only `1280x720` (720p) and `854x480` (480p) resolutions are supported. Other values will generate a warning.
+  
+  **Source Reference:** `src/decart-video-model.ts:125-135`
+</Warning>
+
+### Reproducible Results
+
+Use the `seed` parameter to generate reproducible videos:
+
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A tranquil lake surrounded by mountains',
+  seed: 42,
+});
+```
+
+<Note>
+  Using the same prompt, seed, and settings will produce the same video output.
+  
+  **Source Reference:** `src/decart-video-model.ts:152-154`
+</Note>
+
+## Advanced Configuration
+
+### Custom Polling Behavior
+
+Video generation is asynchronous. Customize the polling behavior:
+
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A spaceship flying through space',
+  providerOptions: {
+    decart: {
+      pollIntervalMs: 2000,  // Poll every 2 seconds (default: 1500)
+      pollTimeoutMs: 600000, // 10 minute timeout (default: 300000)
+    },
+  },
+});
+```
+
+<ParamField path="pollIntervalMs" type="number" default="1500">
+  Time in milliseconds between status checks during video generation.
+  
+  **Source Reference:** `src/decart-video-model.ts:196`
+</ParamField>
+
+<ParamField path="pollTimeoutMs" type="number" default="300000">
+  Maximum time in milliseconds to wait for video generation (default: 5 minutes).
+  
+  **Source Reference:** `src/decart-video-model.ts:197`
+</ParamField>
+
+### Abort Signal
+
+Cancel long-running video generation requests:
+
+```typescript
+const controller = new AbortController();
+
+// Cancel after 2 minutes
+setTimeout(() => controller.abort(), 120000);
+
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A long animation sequence',
+  abortSignal: controller.signal,
+});
+```
+
+**Source Reference:** `src/decart-video-model.ts:204-209`
+
+## Writing Effective Prompts
+
+<Accordion title="Prompt Best Practices">
+  <ul>
+    <li>Be specific about the subject, action, and environment</li>
+    <li>Include motion or camera movement descriptions</li>
+    <li>Specify lighting, weather, or atmosphere when relevant</li>
+    <li>Keep prompts concise but descriptive (1-2 sentences)</li>
+  </ul>
+
+  **Good Examples:**
+  - "A golden retriever running through a sunny meadow with wildflowers"
+  - "Aerial view of a city at sunset, camera slowly panning across skyscrapers"
+  - "Close-up of raindrops falling on a window with a blurred cityscape behind"
+
+  **Less Effective:**
+  - "A dog" (too vague)
+  - "A detailed scene with a dog running in a field with flowers and trees and mountains in the background on a sunny day..." (too long)
+</Accordion>
+
+## Response Structure
+
+The `generateVideo` function returns a result object:
+
+```typescript
+const result = await generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A peaceful forest scene',
+});
+
+// Access the video
+const video = result.videos[0];
+console.log(video.mimeType);      // "video/mp4"
+console.log(video.uint8Array);    // Uint8Array containing video data
+
+// Access response metadata
+console.log(result.response.modelId);    // "lucy-pro-t2v"
+console.log(result.response.timestamp);  // Date object
+```
+
+**Source Reference:** `src/decart-video-model.ts:247-261`
+
+## Error Handling
+
+```typescript
+try {
+  const { videos } = await generateVideo({
+    model: decart.video('lucy-pro-t2v'),
+    prompt: 'A dramatic storm approaching',
+  });
+  
+  fs.writeFileSync('storm.mp4', videos[0].uint8Array);
+} catch (error) {
+  if (error.name === 'AI_APICallError') {
+    console.error('Video generation failed:', error.message);
+  }
+  throw error;
+}
+```
+
+<Note>
+  Common errors include timeout (exceeding 5 minutes), job failure, or network issues.
+  
+  **Source References:**
+  - Timeout error: `src/decart-video-model.ts:211-216`
+  - Job failure: `src/decart-video-model.ts:230-235`
+</Note>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Image-to-Video" icon="image" href="/video/image-to-video">
+    Animate existing images into videos
+  </Card>
+  <Card title="Motion Control" icon="route" href="/video/motion-control">
+    Control camera and subject movement
+  </Card>
+  <Card title="Settings Reference" icon="sliders" href="/video/settings">
+    View all configuration options
+  </Card>
+  <Card title="Examples" icon="code" href="/video/examples">
+    Browse complete working examples
+  </Card>
+</CardGroup>

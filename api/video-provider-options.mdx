@@ -1,0 +1,296 @@
+---
+title: Video Provider Options
+description: Decart-specific options for video generation
+---
+
+## Interface
+
+```typescript
+interface DecartVideoProviderOptions {
+  trajectory?: Array<{ frame: number; x: number; y: number }>;
+  orientation?: "landscape" | "portrait";
+  pollIntervalMs?: number;
+  pollTimeoutMs?: number;
+}
+```
+
+Decart video models support additional provider-specific options that control motion, orientation, and polling behavior. These options are passed via the `providerOptions.decart` parameter.
+
+## Options
+
+### trajectory
+
+<ParamField path="trajectory" type="Array<{ frame: number; x: number; y: number }>" optional>
+  Trajectory array for motion control (used with `lucy-motion` model).
+  
+  Each point in the array defines:
+  - `frame` - Frame number (0-based)
+  - `x` - Horizontal coordinate (0.0 to 1.0, normalized)
+  - `y` - Vertical coordinate (0.0 to 1.0, normalized)
+  
+  The trajectory defines how the camera or subject moves across frames.
+</ParamField>
+
+```typescript
+import { experimental_generateVideo } from 'ai';
+import { decart } from '@ai-sdk/decart';
+
+const { video } = await experimental_generateVideo({
+  model: decart.video('lucy-motion'),
+  image: {
+    type: 'url',
+    url: 'https://example.com/image.jpg'
+  },
+  providerOptions: {
+    decart: {
+      trajectory: [
+        { frame: 0, x: 0.5, y: 0.5 },   // Start at center
+        { frame: 15, x: 0.6, y: 0.4 },  // Move right and up
+        { frame: 30, x: 0.7, y: 0.5 }   // Continue right
+      ]
+    }
+  }
+});
+```
+
+**Coordinate System:**
+- `x: 0.0` = Left edge
+- `x: 1.0` = Right edge
+- `y: 0.0` = Top edge
+- `y: 1.0` = Bottom edge
+- `x: 0.5, y: 0.5` = Center
+
+### orientation
+
+<ParamField path="orientation" type="'landscape' | 'portrait'" optional>
+  Override orientation directly instead of deriving from `aspectRatio`.
+  
+  Values:
+  - `"landscape"` - Horizontal/wide orientation (equivalent to 16:9)
+  - `"portrait"` - Vertical/tall orientation (equivalent to 9:16)
+  
+  This option takes precedence over the `aspectRatio` parameter.
+</ParamField>
+
+```typescript
+import { experimental_generateVideo } from 'ai';
+import { decart } from '@ai-sdk/decart';
+
+const { video } = await experimental_generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A landscape scene',
+  providerOptions: {
+    decart: {
+      orientation: 'landscape'
+    }
+  }
+});
+```
+
+**When to use:**
+- Use `orientation` when you want to directly specify the orientation
+- Use `aspectRatio` (standard parameter) when working with standard AI SDK conventions
+- If both are specified, `orientation` takes precedence
+
+### pollIntervalMs
+
+<ParamField path="pollIntervalMs" type="number" default="1500">
+  Polling interval in milliseconds.
+  
+  Controls how frequently the SDK checks if video generation is complete.
+  
+  - Lower values = more frequent checks = faster response when complete
+  - Higher values = less frequent checks = lower API load
+  
+  Default: 1500ms (1.5 seconds)
+</ParamField>
+
+```typescript
+import { experimental_generateVideo } from 'ai';
+import { decart } from '@ai-sdk/decart';
+
+const { video } = await experimental_generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A scene',
+  providerOptions: {
+    decart: {
+      pollIntervalMs: 2000  // Check every 2 seconds
+    }
+  }
+});
+```
+
+### pollTimeoutMs
+
+<ParamField path="pollTimeoutMs" type="number" default="300000">
+  Polling timeout in milliseconds.
+  
+  Maximum time to wait for video generation to complete before throwing an error.
+  
+  Default: 300000ms (5 minutes)
+</ParamField>
+
+```typescript
+import { experimental_generateVideo } from 'ai';
+import { decart } from '@ai-sdk/decart';
+
+const { video } = await experimental_generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A complex scene',
+  providerOptions: {
+    decart: {
+      pollTimeoutMs: 600000  // Wait up to 10 minutes
+    }
+  }
+});
+```
+
+## Usage Examples
+
+### Motion Control with lucy-motion
+
+```typescript
+import { experimental_generateVideo } from 'ai';
+import { decart } from '@ai-sdk/decart';
+
+// Create a circular camera motion
+const frames = 30;
+const trajectory = Array.from({ length: frames + 1 }, (_, i) => {
+  const angle = (i / frames) * 2 * Math.PI;
+  return {
+    frame: i,
+    x: 0.5 + 0.2 * Math.cos(angle),
+    y: 0.5 + 0.2 * Math.sin(angle)
+  };
+});
+
+const { video } = await experimental_generateVideo({
+  model: decart.video('lucy-motion'),
+  image: {
+    type: 'url',
+    url: 'https://example.com/scene.jpg'
+  },
+  providerOptions: {
+    decart: { trajectory }
+  }
+});
+```
+
+### Custom Polling Configuration
+
+```typescript
+import { experimental_generateVideo } from 'ai';
+import { decart } from '@ai-sdk/decart';
+
+const { video } = await experimental_generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A detailed animation',
+  providerOptions: {
+    decart: {
+      pollIntervalMs: 3000,   // Check every 3 seconds
+      pollTimeoutMs: 900000   // Wait up to 15 minutes
+    }
+  }
+});
+```
+
+### Portrait Orientation Override
+
+```typescript
+import { experimental_generateVideo } from 'ai';
+import { decart } from '@ai-sdk/decart';
+
+const { video } = await experimental_generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A tall building',
+  providerOptions: {
+    decart: {
+      orientation: 'portrait'
+    }
+  }
+});
+```
+
+### Combined Options
+
+```typescript
+import { experimental_generateVideo } from 'ai';
+import { decart } from '@ai-sdk/decart';
+
+const { video } = await experimental_generateVideo({
+  model: decart.video('lucy-motion'),
+  image: {
+    type: 'url',
+    url: 'https://example.com/image.jpg'
+  },
+  seed: 42,
+  resolution: '1280x720',
+  providerOptions: {
+    decart: {
+      orientation: 'landscape',
+      trajectory: [
+        { frame: 0, x: 0.3, y: 0.5 },
+        { frame: 30, x: 0.7, y: 0.5 }
+      ],
+      pollIntervalMs: 2000,
+      pollTimeoutMs: 600000
+    }
+  }
+});
+```
+
+## Error Handling
+
+### Timeout Errors
+
+```typescript
+import { experimental_generateVideo } from 'ai';
+import { decart } from '@ai-sdk/decart';
+
+try {
+  const { video } = await experimental_generateVideo({
+    model: decart.video('lucy-pro-t2v'),
+    prompt: 'A scene',
+    providerOptions: {
+      decart: {
+        pollTimeoutMs: 10000  // Very short timeout
+      }
+    }
+  });
+} catch (error) {
+  if (error.message.includes('timed out')) {
+    console.error('Video generation took too long');
+  }
+}
+```
+
+### Abort Signal with Polling
+
+```typescript
+import { experimental_generateVideo } from 'ai';
+import { decart } from '@ai-sdk/decart';
+
+const controller = new AbortController();
+
+try {
+  const promise = experimental_generateVideo({
+    model: decart.video('lucy-pro-t2v'),
+    prompt: 'A scene',
+    abortSignal: controller.signal,
+    providerOptions: {
+      decart: {
+        pollIntervalMs: 1000
+      }
+    }
+  });
+  
+  // Cancel after 30 seconds
+  setTimeout(() => controller.abort(), 30000);
+  
+  const { video } = await promise;
+} catch (error) {
+  if (error.message.includes('aborted')) {
+    console.error('Video generation was cancelled');
+  }
+}
+```

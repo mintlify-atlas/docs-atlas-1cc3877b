@@ -1,0 +1,342 @@
+---
+title: 'Image Examples'
+description: 'Real-world examples of image generation with the Decart AI SDK Provider'
+---
+
+## Basic Image Generation
+
+The simplest way to generate an image with a text prompt:
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { generateImage } from 'ai';
+
+const { image } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'Three dogs playing in the snow',
+});
+```
+
+<Note>
+  This example is from the source repository: `examples/tasks/image-generation.ts:4`
+</Note>
+
+## Saving Images to File
+
+Generate an image and save it to the filesystem:
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { generateImage } from 'ai';
+import fs from 'fs';
+
+const { image } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'Three dogs playing in the snow',
+});
+
+const filename = `image-${Date.now()}.png`;
+fs.writeFileSync(filename, image.uint8Array);
+console.log(`Image saved to ${filename}`);
+```
+
+## Landscape Images (16:9)
+
+Generate wide, landscape-oriented images:
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { generateImage } from 'ai';
+import fs from 'fs';
+
+const { image } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A serene mountain lake at sunset with reflections',
+  aspectRatio: '16:9',
+});
+
+fs.writeFileSync('landscape.png', image.uint8Array);
+```
+
+## Portrait Images (9:16)
+
+Generate tall, portrait-oriented images:
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { generateImage } from 'ai';
+import fs from 'fs';
+
+const { image } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A tall ancient tree reaching into the clouds',
+  aspectRatio: '9:16',
+});
+
+fs.writeFileSync('portrait.png', image.uint8Array);
+```
+
+## Reproducible Generation with Seeds
+
+Use seed values to generate the same image consistently:
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { generateImage } from 'ai';
+import fs from 'fs';
+
+const config = {
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A futuristic city with flying cars',
+  aspectRatio: '16:9' as const,
+  seed: 42,
+};
+
+// Generate the same image multiple times
+const result1 = await generateImage(config);
+const result2 = await generateImage(config);
+
+// Both images will be identical
+fs.writeFileSync('city-1.png', result1.image.uint8Array);
+fs.writeFileSync('city-2.png', result2.image.uint8Array);
+```
+
+## Generating Multiple Variations
+
+Create multiple variations of the same prompt using different seeds:
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { generateImage } from 'ai';
+import fs from 'fs';
+
+const basePrompt = 'A cozy coffee shop interior with warm lighting';
+const seeds = [100, 200, 300, 400];
+
+for (const seed of seeds) {
+  const { image } = await generateImage({
+    model: decart.image('lucy-pro-t2i'),
+    prompt: basePrompt,
+    seed,
+    aspectRatio: '16:9',
+  });
+  
+  fs.writeFileSync(`coffee-shop-${seed}.png`, image.uint8Array);
+  console.log(`Generated variation with seed ${seed}`);
+}
+```
+
+## Parallel Image Generation
+
+Generate multiple images concurrently:
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { generateImage } from 'ai';
+import fs from 'fs';
+
+const prompts = [
+  'A sunset over the ocean',
+  'A snowy mountain peak',
+  'A bustling city street at night',
+  'A peaceful forest path',
+];
+
+const results = await Promise.all(
+  prompts.map((prompt, index) =>
+    generateImage({
+      model: decart.image('lucy-pro-t2i'),
+      prompt,
+      seed: index * 100,
+    })
+  )
+);
+
+results.forEach((result, index) => {
+  fs.writeFileSync(`image-${index}.png`, result.image.uint8Array);
+  console.log(`Saved image-${index}.png`);
+});
+```
+
+## Handling Warnings
+
+Check for and handle warnings from unsupported settings:
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { generateImage } from 'ai';
+
+const result = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A beautiful garden with flowers',
+  aspectRatio: '1:1', // Unsupported aspect ratio
+});
+
+if (result.warnings && result.warnings.length > 0) {
+  console.warn('Generation warnings:');
+  result.warnings.forEach(warning => {
+    console.warn(`- ${warning.setting}: ${warning.details || 'unsupported'}`);
+  });
+}
+
+// Image is still generated with default settings
+console.log('Image generated successfully');
+```
+
+## Using Custom Provider Configuration
+
+Create a custom provider instance with specific settings:
+
+```typescript
+import { createDecart } from '@decartai/ai-sdk-provider';
+import { generateImage } from 'ai';
+import fs from 'fs';
+
+const customDecart = createDecart({
+  apiKey: process.env.DECART_API_KEY,
+  baseURL: 'https://api.decart.ai',
+  headers: {
+    'X-Custom-Header': 'value',
+  },
+});
+
+const { image } = await generateImage({
+  model: customDecart.image('lucy-pro-t2i'),
+  prompt: 'A majestic waterfall in a tropical jungle',
+  aspectRatio: '9:16',
+});
+
+fs.writeFileSync('waterfall.png', image.uint8Array);
+```
+
+## Complete Example with Image Presentation
+
+Based on the source repository's presentation utilities:
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { generateImage } from 'ai';
+import fs from 'fs';
+import path from 'path';
+import imageType from 'image-type';
+
+async function generateAndSave() {
+  // Generate the image
+  const { image, response } = await generateImage({
+    model: decart.image('lucy-pro-t2i'),
+    prompt: 'Three dogs playing in the snow',
+    aspectRatio: '16:9',
+    seed: 42,
+  });
+
+  // Determine image format
+  const format = await imageType(image.uint8Array);
+  const extension = format?.ext || 'png';
+
+  // Create output directory
+  const outputDir = path.resolve(__dirname, 'output');
+  fs.mkdirSync(outputDir, { recursive: true });
+
+  // Save with timestamp
+  const timestamp = Date.now();
+  const filePath = path.join(
+    outputDir,
+    `image-${timestamp}.${extension}`
+  );
+  
+  fs.writeFileSync(filePath, image.uint8Array);
+  
+  console.log(`Image saved to ${filePath}`);
+  console.log(`Model: ${response.modelId}`);
+  console.log(`Generated at: ${response.timestamp}`);
+}
+
+generateAndSave();
+```
+
+<Note>
+  The image presentation pattern is adapted from `examples/lib/present-image.ts:16` in the source repository.
+</Note>
+
+## Base64 Encoding
+
+Access the image as a base64-encoded data URL:
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { generateImage } from 'ai';
+
+const { image } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A beautiful sunset over mountains',
+});
+
+// Use base64 for web display
+const base64Image = image.base64;
+console.log(`<img src="${base64Image}" alt="Generated image" />`);
+
+// Or access raw bytes
+const bytes = image.uint8Array;
+console.log(`Image size: ${bytes.length} bytes`);
+```
+
+## TypeScript with Type Safety
+
+Full type safety with TypeScript:
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { generateImage, type Experimental_GeneratedImage } from 'ai';
+import fs from 'fs/promises';
+
+interface ImageGenerationConfig {
+  prompt: string;
+  aspectRatio?: '16:9' | '9:16';
+  seed?: number;
+  outputPath: string;
+}
+
+async function generateTypedImage(
+  config: ImageGenerationConfig
+): Promise<Experimental_GeneratedImage> {
+  const { image } = await generateImage({
+    model: decart.image('lucy-pro-t2i'),
+    prompt: config.prompt,
+    aspectRatio: config.aspectRatio,
+    seed: config.seed,
+  });
+
+  await fs.writeFile(config.outputPath, image.uint8Array);
+  console.log(`Saved to ${config.outputPath}`);
+  
+  return image;
+}
+
+// Usage with full type checking
+await generateTypedImage({
+  prompt: 'A serene Japanese garden',
+  aspectRatio: '16:9',
+  seed: 12345,
+  outputPath: './garden.png',
+});
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Models" icon="wand-magic-sparkles" href="/image/models">
+    Learn about model capabilities
+  </Card>
+  
+  <Card title="Settings" icon="sliders" href="/image/settings">
+    Configure generation parameters
+  </Card>
+  
+  <Card title="AI SDK Docs" icon="book" href="https://ai-sdk.dev/docs/reference/ai-sdk-core/generate-image">
+    View AI SDK generateImage() reference
+  </Card>
+  
+  <Card title="Configuration" icon="wrench" href="/advanced/configuration">
+    Configure the Decart provider
+  </Card>
+</CardGroup>

@@ -1,0 +1,204 @@
+---
+title: Configuration
+description: Learn how to configure the Decart provider with custom settings including API keys, base URLs, headers, and custom fetch implementations.
+---
+
+The Decart provider can be configured with various options to customize its behavior. This guide covers all available configuration options for the `createDecart()` function.
+
+## Default Provider Instance
+
+The simplest way to use the Decart provider is with the default instance:
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+```
+
+This instance uses default settings and reads the API key from the `DECART_API_KEY` environment variable.
+
+## Custom Provider Configuration
+
+For advanced use cases, you can create a custom provider instance with `createDecart()`:
+
+```typescript
+import { createDecart } from '@decartai/ai-sdk-provider';
+
+const decart = createDecart({
+  apiKey: 'your-api-key',
+  baseURL: 'https://custom-proxy.example.com',
+  headers: {
+    'Custom-Header': 'value',
+  },
+  fetch: customFetchImplementation,
+});
+```
+
+## Configuration Options
+
+All configuration options are optional and passed as properties of the settings object.
+
+### apiKey
+
+<ParamField path="apiKey" type="string" optional>
+  API key for authenticating with the Decart API. If not provided, the provider will attempt to read from the `DECART_API_KEY` environment variable.
+</ParamField>
+
+**Example:**
+
+```typescript
+const decart = createDecart({
+  apiKey: 'your-api-key',
+});
+```
+
+<Note>
+  The API key is sent using the `X-API-KEY` header in all requests.
+</Note>
+
+### baseURL
+
+<ParamField path="baseURL" type="string" optional default="https://api.decart.ai">
+  Custom base URL for API requests. Useful for routing requests through a proxy server or using a different API endpoint.
+</ParamField>
+
+**Example:**
+
+```typescript
+const decart = createDecart({
+  baseURL: 'https://proxy.example.com',
+});
+```
+
+<Note>
+  Trailing slashes are automatically removed from the base URL.
+</Note>
+
+### headers
+
+<ParamField path="headers" type="Record<string, string>" optional>
+  Additional HTTP headers to include in all API requests. These headers are merged with the default headers.
+</ParamField>
+
+**Example:**
+
+```typescript
+const decart = createDecart({
+  headers: {
+    'X-Custom-Header': 'custom-value',
+    'X-Request-ID': 'unique-request-id',
+  },
+});
+```
+
+<Warning>
+  Custom headers will be merged with default headers. If you provide headers that conflict with default headers (like `X-API-KEY`), your custom values will take precedence.
+</Warning>
+
+### fetch
+
+<ParamField path="fetch" type="FetchFunction" optional>
+  Custom fetch implementation to use for HTTP requests. This allows you to intercept requests, add middleware, or provide a custom fetch implementation for testing.
+</ParamField>
+
+**Type definition:**
+
+```typescript
+type FetchFunction = (input: RequestInfo, init?: RequestInit) => Promise<Response>;
+```
+
+**Example - Request Interceptor:**
+
+```typescript
+const customFetch: FetchFunction = async (input, init) => {
+  console.log('Making request to:', input);
+  const response = await fetch(input, init);
+  console.log('Response status:', response.status);
+  return response;
+};
+
+const decart = createDecart({
+  fetch: customFetch,
+});
+```
+
+**Example - Testing with Mock Fetch:**
+
+```typescript
+import { createDecart } from '@decartai/ai-sdk-provider';
+
+const mockFetch = async (input: RequestInfo, init?: RequestInit) => {
+  // Return mock responses for testing
+  return new Response(JSON.stringify({ job_id: 'test-123' }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+};
+
+const decart = createDecart({
+  fetch: mockFetch,
+});
+```
+
+## Complete Configuration Example
+
+Here's a complete example showing all configuration options together:
+
+```typescript
+import { createDecart } from '@decartai/ai-sdk-provider';
+import type { FetchFunction } from '@ai-sdk/provider-utils';
+
+const loggingFetch: FetchFunction = async (input, init) => {
+  const start = Date.now();
+  console.log(`[${new Date().toISOString()}] Request: ${input}`);
+  
+  const response = await fetch(input, init);
+  const duration = Date.now() - start;
+  
+  console.log(`[${new Date().toISOString()}] Response: ${response.status} (${duration}ms)`);
+  return response;
+};
+
+const decart = createDecart({
+  apiKey: process.env.DECART_API_KEY,
+  baseURL: 'https://api.decart.ai',
+  headers: {
+    'X-Application-Name': 'my-app',
+    'X-Application-Version': '1.0.0',
+  },
+  fetch: loggingFetch,
+});
+
+// Use the configured provider
+const { image } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A beautiful sunset',
+});
+```
+
+## Environment Variables
+
+The Decart provider automatically reads from environment variables:
+
+| Variable | Description | Default |
+|----------|-------------|----------|
+| `DECART_API_KEY` | API key for authentication | Required if `apiKey` option is not provided |
+
+**Example `.env` file:**
+
+```bash
+DECART_API_KEY=your-api-key-here
+```
+
+## User Agent
+
+The provider automatically adds a User-Agent header to all requests with the format:
+
+```
+ai-sdk/decart/{version}
+```
+
+This helps Decart track SDK usage and version information.
+
+## Related Resources
+
+- [Provider Options](/advanced/provider-options) - Learn about video-specific provider options
+- [Error Handling](/advanced/error-handling) - Learn how to handle errors from the Decart API

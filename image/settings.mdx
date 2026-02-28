@@ -1,0 +1,239 @@
+---
+title: 'Image Settings'
+description: 'Configure image generation with aspectRatio and seed parameters'
+---
+
+## Overview
+
+The Decart image models support optional settings to customize the generation behavior. These settings are passed to the `generateImage()` function alongside the model and prompt.
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { generateImage } from 'ai';
+
+const { image } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'Three dogs playing in the snow',
+  aspectRatio: '16:9',  // Optional: control dimensions
+  seed: 42,              // Optional: reproducible results
+});
+```
+
+## Supported Settings
+
+### aspectRatio
+
+<ParamField path="aspectRatio" type="string" default="undefined">
+  Controls the aspect ratio of the generated image. Only two values are supported:
+  
+  - `"16:9"` - Landscape orientation
+  - `"9:16"` - Portrait orientation
+  
+  If not specified, the model uses its default aspect ratio.
+</ParamField>
+
+#### Landscape (16:9)
+
+Ideal for wide scenes, panoramic views, and horizontal compositions:
+
+```typescript
+const { image } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A serene beach at sunset with palm trees',
+  aspectRatio: '16:9',
+});
+```
+
+#### Portrait (9:16)
+
+Ideal for vertical compositions, portraits, and tall subjects:
+
+```typescript
+const { image } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A tall lighthouse on a rocky cliff',
+  aspectRatio: '9:16',
+});
+```
+
+<Warning>
+  **Unsupported Aspect Ratios**
+  
+  Only `16:9` and `9:16` are supported. Other aspect ratios (e.g., `1:1`, `4:3`, `21:9`) will generate a warning and fall back to the default behavior:
+  
+  ```json
+  {
+    "type": "unsupported-setting",
+    "setting": "aspectRatio",
+    "details": "Only 16:9 and 9:16 aspect ratios are supported."
+  }
+  ```
+</Warning>
+
+### seed
+
+<ParamField path="seed" type="number" default="undefined">
+  Sets a seed value for deterministic, reproducible image generation. When you use the same seed with the same prompt and settings, you'll get the same image.
+  
+  - Use any integer value
+  - Useful for A/B testing and iterative refinement
+  - Omit for random generation
+</ParamField>
+
+#### Basic Usage
+
+```typescript
+const { image } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A cozy cabin in the mountains',
+  seed: 12345,
+});
+```
+
+#### Reproducible Results
+
+Generate the same image multiple times:
+
+```typescript
+// First generation
+const result1 = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A robot painting a landscape',
+  seed: 42,
+  aspectRatio: '16:9',
+});
+
+// Second generation - identical to first
+const result2 = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A robot painting a landscape',
+  seed: 42,
+  aspectRatio: '16:9',
+});
+
+// Images are identical
+```
+
+#### Iterative Refinement
+
+Test variations by changing only the seed:
+
+```typescript
+const baseConfig = {
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A futuristic city at night',
+  aspectRatio: '16:9' as const,
+};
+
+// Generate variations
+const seeds = [100, 200, 300, 400, 500];
+const variations = await Promise.all(
+  seeds.map(seed => 
+    generateImage({ ...baseConfig, seed })
+  )
+);
+```
+
+## Unsupported Settings
+
+<Note>
+  The following AI SDK settings are **not supported** by Decart models and will generate warnings if used:
+</Note>
+
+### size
+
+The `size` parameter is not supported. Use `aspectRatio` instead:
+
+```typescript
+// ❌ Not supported
+const result = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A mountain landscape',
+  size: '1024x1024', // Will generate warning
+});
+
+// ✅ Use aspectRatio instead
+const result = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A mountain landscape',
+  aspectRatio: '16:9',
+});
+```
+
+**Warning output:**
+```json
+{
+  "type": "unsupported-setting",
+  "setting": "size"
+}
+```
+
+## Implementation Details
+
+### Internal Conversion
+
+When you specify an `aspectRatio`, it's converted to an `orientation` value that's sent to the Decart API:
+
+- `"16:9"` → `"landscape"`
+- `"9:16"` → `"portrait"`
+
+This conversion is handled automatically by the provider (see `decart-config.ts:14`).
+
+### API Request Format
+
+Settings are sent as form data to the Decart API:
+
+```typescript
+// Internal implementation (from decart-image-model.ts:57-66)
+const formData = new FormData();
+formData.append('prompt', prompt);
+
+if (seed !== undefined) {
+  formData.append('seed', seed.toString());
+}
+
+if (orientation !== undefined) {
+  formData.append('orientation', orientation);
+}
+```
+
+## Complete Example
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { generateImage } from 'ai';
+import fs from 'fs';
+
+async function generateCustomImage() {
+  const { image, warnings } = await generateImage({
+    model: decart.image('lucy-pro-t2i'),
+    prompt: 'A majestic eagle soaring over snow-capped mountains',
+    aspectRatio: '9:16',  // Portrait orientation
+    seed: 777,            // Reproducible results
+  });
+
+  // Check for warnings
+  if (warnings && warnings.length > 0) {
+    console.warn('Warnings:', warnings);
+  }
+
+  // Save the image
+  const filename = `eagle-${Date.now()}.png`;
+  fs.writeFileSync(filename, image.uint8Array);
+  console.log(`Image saved to ${filename}`);
+}
+
+generateCustomImage();
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Models" icon="wand-magic-sparkles" href="/image/models">
+    Learn about lucy-pro-t2i capabilities
+  </Card>
+  
+  <Card title="Examples" icon="code" href="/image/examples">
+    See real-world usage examples
+  </Card>
+</CardGroup>

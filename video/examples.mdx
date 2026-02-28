@@ -1,0 +1,587 @@
+---
+title: Video Examples
+description: Complete working examples for video generation with Decart models
+---
+
+This page provides complete, runnable examples for all video generation use cases. All examples are from the actual source repository.
+
+## Prerequisites
+
+All examples assume you have:
+
+```bash
+npm install @decartai/ai-sdk-provider ai
+```
+
+And set your API key:
+
+```bash
+export DECART_API_KEY='your-api-key'
+```
+
+## Text-to-Video
+
+Generate videos from text prompts using `lucy-pro-t2v`.
+
+### Basic Example
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+
+export const modelId = 'lucy-pro-t2v';
+
+export async function run() {
+  const result = await generateVideo({
+    model: decart.video('lucy-pro-t2v'),
+    prompt: 'A man is riding a horse in a field',
+  });
+  return result;
+}
+```
+
+**Source:** `examples/tasks/video-generation-t2v.ts`
+
+### With All Settings
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+import fs from 'fs';
+
+async function generateTextToVideo() {
+  const { videos, warnings } = await generateVideo({
+    model: decart.video('lucy-pro-t2v'),
+    prompt: 'A sunset over the ocean with waves crashing',
+    aspectRatio: '16:9',
+    resolution: '1280x720',
+    seed: 42,
+    providerOptions: {
+      decart: {
+        pollIntervalMs: 2000,
+        pollTimeoutMs: 600000, // 10 minutes
+      },
+    },
+  });
+
+  // Save the video
+  const filename = `video-${Date.now()}.mp4`;
+  fs.writeFileSync(filename, videos[0].uint8Array);
+  console.log(`Saved to ${filename}`);
+
+  // Check warnings
+  if (warnings.length > 0) {
+    console.warn('Warnings:', warnings);
+  }
+
+  return videos[0];
+}
+
+generateTextToVideo();
+```
+
+### Batch Generation
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+import fs from 'fs';
+
+const prompts = [
+  'A person walking through a forest',
+  'Clouds moving across a blue sky',
+  'A cat playing with a toy',
+];
+
+async function batchGenerate() {
+  for (const [index, prompt] of prompts.entries()) {
+    console.log(`Generating video ${index + 1}/${prompts.length}...`);
+    
+    const { videos } = await generateVideo({
+      model: decart.video('lucy-pro-t2v'),
+      prompt,
+      aspectRatio: '16:9',
+    });
+    
+    const filename = `batch-${index + 1}.mp4`;
+    fs.writeFileSync(filename, videos[0].uint8Array);
+    console.log(`Saved ${filename}`);
+  }
+}
+
+batchGenerate();
+```
+
+## Image-to-Video
+
+Animate images into videos using `lucy-pro-i2v` or `lucy-dev-i2v`.
+
+### Basic Example
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+
+export const modelId = 'lucy-pro-i2v';
+
+export async function run(image: Uint8Array) {
+  const result = await generateVideo({
+    model: decart.video('lucy-pro-i2v'),
+    prompt: {
+      image,
+      text: 'The subject begins to walk forward slowly',
+    },
+  });
+  return result;
+}
+```
+
+**Source:** `examples/tasks/video-generation-i2v.ts`
+
+### From File
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+import fs from 'fs';
+
+async function animateImage() {
+  // Load image from file
+  const imageData = fs.readFileSync('input-image.jpg');
+  
+  const { videos } = await generateVideo({
+    model: decart.video('lucy-pro-i2v'),
+    prompt: {
+      image: imageData,
+      text: 'The subject begins to walk forward slowly',
+    },
+    aspectRatio: '16:9',
+    seed: 42,
+  });
+  
+  // Save the animated video
+  fs.writeFileSync('animated.mp4', videos[0].uint8Array);
+  console.log('Animation complete!');
+}
+
+animateImage();
+```
+
+### From URL
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+import fs from 'fs';
+
+async function animateFromUrl() {
+  const { videos } = await generateVideo({
+    model: decart.video('lucy-pro-i2v'),
+    prompt: {
+      image: {
+        type: 'url',
+        url: 'https://example.com/portrait.jpg',
+      },
+      text: 'The person smiles and nods',
+    },
+  });
+  
+  fs.writeFileSync('from-url.mp4', videos[0].uint8Array);
+}
+
+animateFromUrl();
+```
+
+### Development vs Production
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+import fs from 'fs';
+
+async function compareModels() {
+  const imageData = fs.readFileSync('test-image.jpg');
+  const prompt = {
+    image: imageData,
+    text: 'The subject looks around',
+  };
+  
+  // Fast iteration with dev model
+  console.log('Generating with lucy-dev-i2v...');
+  const devResult = await generateVideo({
+    model: decart.video('lucy-dev-i2v'),
+    prompt,
+  });
+  fs.writeFileSync('dev-output.mp4', devResult.videos[0].uint8Array);
+  
+  // High quality with pro model
+  console.log('Generating with lucy-pro-i2v...');
+  const proResult = await generateVideo({
+    model: decart.video('lucy-pro-i2v'),
+    prompt,
+  });
+  fs.writeFileSync('pro-output.mp4', proResult.videos[0].uint8Array);
+  
+  console.log('Both models complete!');
+}
+
+compareModels();
+```
+
+## Motion Control
+
+Control camera and subject movement with `lucy-motion`.
+
+### Basic Trajectory
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+
+export const modelId = 'lucy-motion';
+
+export async function run(image: Uint8Array) {
+  const result = await generateVideo({
+    model: decart.video('lucy-motion'),
+    prompt: {
+      image,
+      text: 'The subject moves along the specified path',
+    },
+    providerOptions: {
+      decart: {
+        trajectory: [
+          { frame: 0, x: 0.5, y: 0.5 },
+          { frame: 12, x: 0.7, y: 0.9 },
+          { frame: 25, x: 0.3, y: 0.1 },
+        ],
+      },
+    },
+  });
+  return result;
+}
+```
+
+**Source:** `examples/tasks/video-generation-motion.ts`
+
+### Horizontal Pan
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+import fs from 'fs';
+
+async function horizontalPan() {
+  const imageData = fs.readFileSync('landscape.jpg');
+  
+  const { videos } = await generateVideo({
+    model: decart.video('lucy-motion'),
+    prompt: {
+      image: imageData,
+      text: 'Camera pans across the scene',
+    },
+    providerOptions: {
+      decart: {
+        trajectory: [
+          { frame: 0, x: 0.0, y: 0.5 },   // Start left
+          { frame: 25, x: 1.0, y: 0.5 },  // End right
+        ],
+      },
+    },
+  });
+  
+  fs.writeFileSync('pan.mp4', videos[0].uint8Array);
+}
+
+horizontalPan();
+```
+
+### Circular Motion
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+import fs from 'fs';
+
+async function circularMotion() {
+  const imageData = fs.readFileSync('subject.jpg');
+  
+  const { videos } = await generateVideo({
+    model: decart.video('lucy-motion'),
+    prompt: {
+      image: imageData,
+      text: 'Smooth circular camera movement',
+    },
+    aspectRatio: '16:9',
+    resolution: '1280x720',
+    providerOptions: {
+      decart: {
+        trajectory: [
+          { frame: 0, x: 0.5, y: 0.3 },   // Top
+          { frame: 6, x: 0.7, y: 0.5 },   // Right
+          { frame: 12, x: 0.5, y: 0.7 },  // Bottom
+          { frame: 18, x: 0.3, y: 0.5 },  // Left
+          { frame: 24, x: 0.5, y: 0.3 },  // Back to top
+        ],
+      },
+    },
+  });
+  
+  fs.writeFileSync('circular.mp4', videos[0].uint8Array);
+}
+
+circularMotion();
+```
+
+### Complex Path
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+import fs from 'fs';
+
+async function complexPath() {
+  const imageData = fs.readFileSync('scene.jpg');
+  
+  // Define a zigzag motion path
+  const trajectory = [
+    { frame: 0, x: 0.2, y: 0.5 },
+    { frame: 5, x: 0.4, y: 0.3 },
+    { frame: 10, x: 0.6, y: 0.7 },
+    { frame: 15, x: 0.8, y: 0.4 },
+    { frame: 20, x: 0.6, y: 0.6 },
+    { frame: 25, x: 0.5, y: 0.5 },
+  ];
+  
+  const { videos } = await generateVideo({
+    model: decart.video('lucy-motion'),
+    prompt: {
+      image: imageData,
+      text: 'Dynamic camera movement through the scene',
+    },
+    seed: 42,
+    providerOptions: {
+      decart: {
+        trajectory,
+        pollTimeoutMs: 600000, // Complex paths may take longer
+      },
+    },
+  });
+  
+  fs.writeFileSync('complex-motion.mp4', videos[0].uint8Array);
+  console.log('Complex motion video generated!');
+}
+
+complexPath();
+```
+
+## Advanced Patterns
+
+### Error Handling
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+import fs from 'fs';
+
+async function generateWithErrorHandling() {
+  try {
+    const { videos, warnings } = await generateVideo({
+      model: decart.video('lucy-pro-t2v'),
+      prompt: 'A beautiful landscape',
+      aspectRatio: '16:9',
+    });
+    
+    // Check for warnings
+    if (warnings.length > 0) {
+      console.warn('Generation completed with warnings:');
+      warnings.forEach(w => {
+        console.warn(`- ${w.feature}: ${w.details || 'unsupported'}`);
+      });
+    }
+    
+    // Save video
+    const filename = `video-${Date.now()}.mp4`;
+    fs.writeFileSync(filename, videos[0].uint8Array);
+    console.log(`Successfully saved to ${filename}`);
+    
+    return videos[0];
+    
+  } catch (error: any) {
+    if (error.name === 'AI_APICallError') {
+      console.error('API Error:', error.message);
+      
+      // Handle specific error cases
+      if (error.message.includes('timed out')) {
+        console.error('Generation took too long. Try increasing pollTimeoutMs.');
+      } else if (error.message.includes('failed')) {
+        console.error('Generation job failed. Check your input parameters.');
+      } else if (error.message.includes('aborted')) {
+        console.error('Request was cancelled.');
+      }
+    } else {
+      console.error('Unexpected error:', error);
+    }
+    throw error;
+  }
+}
+
+generateWithErrorHandling();
+```
+
+### With Abort Signal
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+
+async function cancellableGeneration() {
+  const controller = new AbortController();
+  
+  // Cancel after 2 minutes
+  const timeoutId = setTimeout(() => {
+    console.log('Cancelling generation...');
+    controller.abort();
+  }, 120000);
+  
+  try {
+    const { videos } = await generateVideo({
+      model: decart.video('lucy-pro-t2v'),
+      prompt: 'A long video sequence',
+      abortSignal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    return videos[0];
+    
+  } catch (error: any) {
+    if (error.message.includes('aborted')) {
+      console.log('Generation was cancelled successfully');
+    } else {
+      throw error;
+    }
+  }
+}
+
+cancellableGeneration();
+```
+
+### Progress Tracking
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+
+async function generateWithProgress() {
+  console.log('Starting video generation...');
+  const startTime = Date.now();
+  
+  const { videos } = await generateVideo({
+    model: decart.video('lucy-pro-t2v'),
+    prompt: 'A cinematic scene',
+    providerOptions: {
+      decart: {
+        pollIntervalMs: 2000,
+      },
+    },
+  });
+  
+  const duration = (Date.now() - startTime) / 1000;
+  console.log(`Generation completed in ${duration.toFixed(1)}s`);
+  console.log(`Video size: ${videos[0].uint8Array.length} bytes`);
+  
+  return videos[0];
+}
+
+generateWithProgress();
+```
+
+### Custom Provider Instance
+
+```typescript
+import { createDecart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+import fs from 'fs';
+
+// Create custom provider with specific configuration
+const customDecart = createDecart({
+  apiKey: process.env.CUSTOM_API_KEY,
+  baseURL: 'https://custom.decart.ai',
+  headers: {
+    'X-Custom-Header': 'value',
+  },
+});
+
+async function generateWithCustomProvider() {
+  const { videos } = await generateVideo({
+    model: customDecart.video('lucy-pro-t2v'),
+    prompt: 'A custom generated video',
+  });
+  
+  fs.writeFileSync('custom.mp4', videos[0].uint8Array);
+}
+
+generateWithCustomProvider();
+```
+
+## TypeScript Types
+
+Example with full type safety:
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import {
+  experimental_generateVideo as generateVideo,
+  type Experimental_VideoGenerationResult as VideoGenerationResult,
+} from 'ai';
+import fs from 'fs';
+
+interface GenerationOptions {
+  prompt: string;
+  aspectRatio?: '16:9' | '9:16';
+  resolution?: '1280x720' | '854x480';
+  seed?: number;
+}
+
+async function typedGeneration(
+  options: GenerationOptions
+): Promise<VideoGenerationResult> {
+  const result: VideoGenerationResult = await generateVideo({
+    model: decart.video('lucy-pro-t2v'),
+    prompt: options.prompt,
+    aspectRatio: options.aspectRatio,
+    resolution: options.resolution,
+    seed: options.seed,
+  });
+  
+  // Type-safe access
+  const video = result.videos[0];
+  console.log(`Generated video: ${video.mediaType}`);
+  console.log(`Size: ${video.uint8Array.length} bytes`);
+  
+  return result;
+}
+
+typedGeneration({
+  prompt: 'A typed video generation',
+  aspectRatio: '16:9',
+  resolution: '1280x720',
+  seed: 42,
+});
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="View All Models" icon="list" href="/video/models">
+    Explore model specifications
+  </Card>
+  <Card title="Settings Reference" icon="sliders" href="/video/settings">
+    View all configuration options
+  </Card>
+  <Card title="Motion Control Guide" icon="route" href="/video/motion-control">
+    Learn trajectory-based generation
+  </Card>
+  <Card title="Overview" icon="video" href="/video/overview">
+    Back to video generation overview
+  </Card>
+</CardGroup>

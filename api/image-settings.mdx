@@ -1,0 +1,181 @@
+---
+title: Image Settings
+description: Configuration options for Decart image generation
+---
+
+## Overview
+
+Decart image models support standard AI SDK image generation settings with some limitations. This page describes the supported and unsupported settings.
+
+## Supported Settings
+
+### prompt
+
+<ParamField path="prompt" type="string" required>
+  Text description of the image to generate.
+  
+  The prompt guides the image generation process and should be descriptive and specific.
+</ParamField>
+
+```typescript
+import { generateImage } from 'ai';
+import { decart } from '@ai-sdk/decart';
+
+const { image } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A serene mountain landscape at sunset with snow-capped peaks'
+});
+```
+
+### seed
+
+<ParamField path="seed" type="number" optional>
+  Random seed for reproducible image generation.
+  
+  Using the same seed with the same prompt will produce the same image.
+</ParamField>
+
+```typescript
+import { generateImage } from 'ai';
+import { decart } from '@ai-sdk/decart';
+
+const { image } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A futuristic city',
+  seed: 42
+});
+```
+
+### aspectRatio
+
+<ParamField path="aspectRatio" type="'16:9' | '9:16'" optional>
+  Aspect ratio of the generated image.
+  
+  Only two aspect ratios are supported:
+  - `"16:9"` - Landscape orientation
+  - `"9:16"` - Portrait orientation
+  
+  Other aspect ratios will produce a warning and be ignored.
+</ParamField>
+
+```typescript
+import { generateImage } from 'ai';
+import { decart } from '@ai-sdk/decart';
+
+// Landscape
+const { image: landscape } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'Wide panoramic view',
+  aspectRatio: '16:9'
+});
+
+// Portrait
+const { image: portrait } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'Tall tower',
+  aspectRatio: '9:16'
+});
+```
+
+## Unsupported Settings
+
+The following settings are not supported and will produce warnings:
+
+### size
+
+<ParamField path="size" type="{ width: number; height: number }" optional>
+  **Not supported.** Specifying this parameter will produce a warning of type `unsupported-setting`.
+  
+  Use `aspectRatio` instead to control image dimensions.
+</ParamField>
+
+```typescript
+import { generateImage } from 'ai';
+import { decart } from '@ai-sdk/decart';
+
+const result = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A landscape',
+  size: { width: 1024, height: 768 } // Will produce warning
+});
+
+// Check warnings
+if (result.warnings) {
+  console.log(result.warnings);
+  // [{ type: 'unsupported-setting', setting: 'size' }]
+}
+```
+
+### n (number of images)
+
+<ParamField path="n" type="number" optional>
+  **Limited support.** Decart image models always generate exactly one image per call (`maxImagesPerCall = 1`).
+  
+  To generate multiple images, make multiple calls.
+</ParamField>
+
+## Handling Warnings
+
+When using unsupported settings, the model returns warnings in the response:
+
+```typescript
+import { generateImage } from 'ai';
+import { decart } from '@ai-sdk/decart';
+
+const result = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A landscape',
+  aspectRatio: '1:1' // Unsupported aspect ratio
+});
+
+if (result.warnings && result.warnings.length > 0) {
+  result.warnings.forEach(warning => {
+    console.log(`Warning: ${warning.type}`);
+    if ('setting' in warning) {
+      console.log(`  Setting: ${warning.setting}`);
+    }
+    if ('details' in warning) {
+      console.log(`  Details: ${warning.details}`);
+    }
+  });
+}
+```
+
+## Standard Request Options
+
+In addition to model-specific settings, you can also use standard AI SDK request options:
+
+### headers
+
+<ParamField path="headers" type="Record<string, string>" optional>
+  Custom HTTP headers to include with the request.
+</ParamField>
+
+```typescript
+const { image } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A landscape',
+  headers: {
+    'X-Custom-Header': 'value'
+  }
+});
+```
+
+### abortSignal
+
+<ParamField path="abortSignal" type="AbortSignal" optional>
+  AbortSignal to cancel the request.
+</ParamField>
+
+```typescript
+const controller = new AbortController();
+
+const promise = generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A landscape',
+  abortSignal: controller.signal
+});
+
+// Cancel after 5 seconds
+setTimeout(() => controller.abort(), 5000);
+```

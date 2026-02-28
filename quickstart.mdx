@@ -1,80 +1,211 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Generate your first images and videos with the Decart AI SDK Provider
 ---
 
-## Get started in three steps
+# Quickstart Guide
 
-Get your documentation site running locally and make your first customization.
+Get up and running quickly with the Decart AI SDK Provider. This guide will walk you through generating your first image and video.
 
-### Step 1: Set up your local environment
+## Prerequisites
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+Make sure you've completed the [Installation](/installation) steps:
 
-### Step 2: Deploy your changes
+- Installed `@decartai/ai-sdk-provider` and `ai` packages
+- Set up your `DECART_API_KEY` environment variable
+- Using Node.js 18 or higher
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+## Generate Your First Image
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+Let's create a simple image from a text prompt:
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+<Steps>
+  <Step title="Import the required functions">
+    ```typescript
+    import { decart } from '@decartai/ai-sdk-provider';
+    import { generateImage } from 'ai';
+    import fs from 'fs';
+    ```
+  </Step>
+  
+  <Step title="Generate an image">
+    ```typescript
+    const { image } = await generateImage({
+      model: decart.image('lucy-pro-t2i'),
+      prompt: 'Three dogs playing in the snow',
+    });
+    ```
+  </Step>
+  
+  <Step title="Save the image">
+    ```typescript
+    const filename = `image-${Date.now()}.png`;
+    fs.writeFileSync(filename, image.uint8Array);
+    console.log(`Image saved to ${filename}`);
+    ```
+  </Step>
+</Steps>
 
-### Step 3: Go live
+### Complete Example
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+```typescript image-generation.ts
+import { decart } from '@decartai/ai-sdk-provider';
+import { generateImage } from 'ai';
+import fs from 'fs';
 
-## Next steps
+const { image } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'Three dogs playing in the snow',
+});
 
-Now that you have your docs running, explore these key features:
+const filename = `image-${Date.now()}.png`;
+fs.writeFileSync(filename, image.uint8Array);
+console.log(`Image saved to ${filename}`);
+```
 
-<CardGroup cols={2}>
+<Info>
+The `image.uint8Array` property contains the raw image data in PNG format.
+</Info>
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
+## Generate Your First Video
 
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
+Now let's create a video from a text prompt:
 
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
+<Steps>
+  <Step title="Import the required functions">
+    ```typescript
+    import { decart } from '@decartai/ai-sdk-provider';
+    import { experimental_generateVideo as generateVideo } from 'ai';
+    import fs from 'fs';
+    ```
+  </Step>
+  
+  <Step title="Generate a video">
+    ```typescript
+    const { videos } = await generateVideo({
+      model: decart.video('lucy-pro-t2v'),
+      prompt: 'A man is riding a horse in a field',
+    });
+    ```
+  </Step>
+  
+  <Step title="Save the video">
+    ```typescript
+    fs.writeFileSync('video.mp4', videos[0].uint8Array);
+    console.log('Video saved to video.mp4');
+    ```
+  </Step>
+</Steps>
 
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
+### Complete Example
 
-</CardGroup>
+```typescript video-generation.ts
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+import fs from 'fs';
+
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A man is riding a horse in a field',
+});
+
+fs.writeFileSync('video.mp4', videos[0].uint8Array);
+console.log('Video saved to video.mp4');
+```
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+The `experimental_generateVideo` function is part of the AI SDK's experimental API for video generation.
 </Note>
+
+## Customizing Generation
+
+### Control Aspect Ratio
+
+Both image and video generation support aspect ratio customization:
+
+<CodeGroup>
+
+```typescript Landscape (16:9)
+const { image } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A panoramic mountain landscape',
+  aspectRatio: '16:9',
+});
+```
+
+```typescript Portrait (9:16)
+const { image } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A tall building reaching into the clouds',
+  aspectRatio: '9:16',
+});
+```
+
+</CodeGroup>
+
+### Reproducible Results with Seeds
+
+Use a seed value to get consistent outputs:
+
+```typescript
+const { image } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'Three dogs playing in the snow',
+  seed: 42, // Same seed will produce the same image
+});
+```
+
+### Video Resolution
+
+Control video quality with the resolution parameter:
+
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A sunset over the ocean',
+  resolution: '1280x720', // 720p quality
+});
+```
+
+Supported resolutions:
+- `1280x720` (720p, default)
+- `854x480` (480p)
+
+## Next Steps
+
+Now that you've generated your first image and video, explore more advanced features:
+
+<CardGroup cols={2}>
+  <Card title="Image Generation" icon="image" href="/image/overview">
+    Deep dive into text-to-image generation with lucy-pro-t2i
+  </Card>
+  <Card title="Video Generation" icon="video" href="/video/overview">
+    Learn about text-to-video and image-to-video generation
+  </Card>
+  <Card title="Motion Control" icon="route" href="/video/motion-control">
+    Control camera movement with trajectory-based generation
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/decart-provider">
+    Explore all available models and settings
+  </Card>
+</CardGroup>
+
+## Common Issues
+
+<Tip>
+**API Key Not Found**
+
+If you see an error about missing API key:
+- Verify `DECART_API_KEY` is set in your environment
+- Check your `.env` file is in the correct directory
+- Restart your development server after setting environment variables
+</Tip>
+
+<Tip>
+**Module Not Found**
+
+If you encounter import errors:
+- Ensure both `@decartai/ai-sdk-provider` and `ai` are installed
+- Check you're using Node.js 18 or higher
+- Try clearing your `node_modules` and reinstalling
+</Tip>

@@ -1,0 +1,299 @@
+---
+title: Provider Options
+description: Configure video-specific options for the Decart provider including trajectory control, orientation settings, and polling behavior.
+---
+
+The Decart provider supports model-specific options that can be passed via `providerOptions.decart` when generating videos. These options allow you to control video generation behavior beyond the standard AI SDK options.
+
+## Overview
+
+Provider options are passed through the `providerOptions` parameter in video generation calls:
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+
+const { videos } = await generateVideo({
+  model: decart.video('lucy-motion'),
+  prompt: 'A camera moving through a scene',
+  providerOptions: {
+    decart: {
+      // Decart-specific options
+      trajectory: [...],
+      orientation: 'landscape',
+      pollIntervalMs: 2000,
+      pollTimeoutMs: 600000,
+    },
+  },
+});
+```
+
+## Available Options
+
+### trajectory
+
+<ParamField path="trajectory" type="Array<{ frame: number; x: number; y: number }>" optional>
+  Defines a motion path for the `lucy-motion` model. Each point specifies a frame number and normalized x,y coordinates (0.0 to 1.0).
+</ParamField>
+
+The trajectory array controls camera or subject movement over time. Each point in the array represents a keyframe:
+
+- **frame**: The frame number (0-based)
+- **x**: Horizontal position (0.0 = left, 1.0 = right)
+- **y**: Vertical position (0.0 = top, 1.0 = bottom)
+
+**Example - Diagonal Movement:**
+
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-motion'),
+  prompt: {
+    image: imageData,
+    text: 'The camera moves diagonally across the scene',
+  },
+  providerOptions: {
+    decart: {
+      trajectory: [
+        { frame: 0, x: 0.2, y: 0.2 },   // Start top-left
+        { frame: 12, x: 0.5, y: 0.5 },  // Middle of video, center
+        { frame: 25, x: 0.8, y: 0.8 },  // End bottom-right
+      ],
+    },
+  },
+});
+```
+
+**Example - Circular Motion:**
+
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-motion'),
+  prompt: {
+    image: imageData,
+    text: 'The camera orbits around the subject',
+  },
+  providerOptions: {
+    decart: {
+      trajectory: [
+        { frame: 0, x: 0.7, y: 0.5 },   // Right
+        { frame: 6, x: 0.5, y: 0.3 },   // Top
+        { frame: 12, x: 0.3, y: 0.5 },  // Left
+        { frame: 18, x: 0.5, y: 0.7 },  // Bottom
+        { frame: 25, x: 0.7, y: 0.5 },  // Back to right
+      ],
+    },
+  },
+});
+```
+
+<Note>
+  The `trajectory` option is only supported by the `lucy-motion` model. It will be ignored for other video models.
+</Note>
+
+### orientation
+
+<ParamField path="orientation" type="'landscape' | 'portrait'" optional>
+  Explicitly sets the video orientation. This overrides the orientation derived from the `aspectRatio` parameter.
+</ParamField>
+
+**Example:**
+
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A sunset over the ocean',
+  providerOptions: {
+    decart: {
+      orientation: 'landscape',
+    },
+  },
+});
+```
+
+<Note>
+  The `orientation` option takes precedence over `aspectRatio`. If both are provided, `orientation` will be used.
+</Note>
+
+**Orientation vs. Aspect Ratio:**
+
+| `aspectRatio` | Derived `orientation` |
+|---------------|----------------------|
+| `16:9` | `landscape` |
+| `9:16` | `portrait` |
+| Other | `undefined` (warning) |
+
+### pollIntervalMs
+
+<ParamField path="pollIntervalMs" type="number" optional default="1500">
+  The interval in milliseconds between status polling requests when checking video generation job status.
+</ParamField>
+
+Video generation is asynchronous. After submitting a job, the SDK polls the API to check when the video is ready. This option controls how frequently those checks occur.
+
+**Example - Faster Polling:**
+
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A fast-paced action scene',
+  providerOptions: {
+    decart: {
+      pollIntervalMs: 1000, // Poll every second
+    },
+  },
+});
+```
+
+**Example - Slower Polling:**
+
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A peaceful landscape',
+  providerOptions: {
+    decart: {
+      pollIntervalMs: 3000, // Poll every 3 seconds
+    },
+  },
+});
+```
+
+<Warning>
+  Setting `pollIntervalMs` too low may result in unnecessary API calls and increased costs. The default of 1500ms is recommended for most use cases.
+</Warning>
+
+### pollTimeoutMs
+
+<ParamField path="pollTimeoutMs" type="number" optional default="300000">
+  The maximum time in milliseconds to wait for video generation to complete. Default is 300,000ms (5 minutes).
+</ParamField>
+
+If the video generation job doesn't complete within this time, the SDK will throw a timeout error.
+
+**Example - Extended Timeout:**
+
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A complex scene with many details',
+  providerOptions: {
+    decart: {
+      pollTimeoutMs: 600000, // 10 minutes
+    },
+  },
+});
+```
+
+**Example - Short Timeout:**
+
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'Quick test video',
+  providerOptions: {
+    decart: {
+      pollTimeoutMs: 120000, // 2 minutes
+    },
+  },
+});
+```
+
+<Note>
+  If a timeout occurs, you'll receive an `AI_APICallError` with a message indicating the timeout duration. See [Error Handling](/advanced/error-handling) for more details.
+</Note>
+
+## Complete Example
+
+Here's a comprehensive example using all provider options:
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+import fs from 'fs';
+
+const { videos } = await generateVideo({
+  model: decart.video('lucy-motion'),
+  prompt: {
+    image: fs.readFileSync('input.png'),
+    text: 'The camera slowly pans across the scene from left to right',
+  },
+  aspectRatio: '16:9',
+  seed: 42,
+  resolution: '1280x720',
+  providerOptions: {
+    decart: {
+      // Define a smooth left-to-right pan
+      trajectory: [
+        { frame: 0, x: 0.2, y: 0.5 },
+        { frame: 8, x: 0.4, y: 0.5 },
+        { frame: 16, x: 0.6, y: 0.5 },
+        { frame: 25, x: 0.8, y: 0.5 },
+      ],
+      // Explicitly set landscape orientation
+      orientation: 'landscape',
+      // Poll every 2 seconds
+      pollIntervalMs: 2000,
+      // Wait up to 10 minutes
+      pollTimeoutMs: 600000,
+    },
+  },
+});
+
+fs.writeFileSync('output.mp4', videos[0].uint8Array);
+console.log('Video generated successfully!');
+```
+
+## Polling Behavior
+
+The Decart API uses an asynchronous job-based system for video generation:
+
+1. **Submit Job**: The SDK sends a POST request to `/v1/jobs/{modelId}` with your parameters
+2. **Receive Job ID**: The API returns a job ID immediately
+3. **Poll Status**: The SDK repeatedly checks `/v1/jobs/{jobId}` until the status is `completed` or `failed`
+4. **Download Video**: Once complete, the SDK downloads the video from `/v1/jobs/{jobId}/content`
+
+The polling options control steps 3 and 4:
+
+<CodeGroup>
+
+```typescript Polling Flow
+// Job submitted, polling begins
+let elapsed = 0;
+while (elapsed < pollTimeoutMs) {
+  await delay(pollIntervalMs);
+  
+  const status = await checkJobStatus(jobId);
+  
+  if (status === 'completed') {
+    // Download and return video
+    return await downloadVideo(jobId);
+  }
+  
+  if (status === 'failed') {
+    throw new Error('Job failed');
+  }
+  
+  elapsed += pollIntervalMs;
+}
+
+throw new Error('Timeout');
+```
+
+</CodeGroup>
+
+## Model Support
+
+Different options are supported by different models:
+
+| Option | lucy-pro-t2v | lucy-pro-i2v | lucy-dev-i2v | lucy-motion |
+|--------|--------------|--------------|--------------|-------------|
+| `trajectory` | No | No | No | Yes |
+| `orientation` | Yes | Yes | Yes | Yes |
+| `pollIntervalMs` | Yes | Yes | Yes | Yes |
+| `pollTimeoutMs` | Yes | Yes | Yes | Yes |
+
+## Related Resources
+
+- [Configuration](/advanced/configuration) - Learn about provider-level configuration
+- [Error Handling](/advanced/error-handling) - Learn how to handle polling timeouts and other errors
+- [Video Models](/video/models) - Learn about available video models and their capabilities

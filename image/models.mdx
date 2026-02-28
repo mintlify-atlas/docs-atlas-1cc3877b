@@ -1,0 +1,163 @@
+---
+title: 'Image Models'
+description: 'Available image generation models and their capabilities'
+---
+
+## Available Models
+
+Decart provides one high-quality image generation model through the AI SDK Provider:
+
+### lucy-pro-t2i
+
+The `lucy-pro-t2i` model is a state-of-the-art text-to-image generation model that produces high-quality, photorealistic images from text prompts.
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { generateImage } from 'ai';
+
+const { image } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'Three dogs playing in the snow',
+});
+```
+
+## Model Capabilities
+
+### Supported Aspect Ratios
+
+The `lucy-pro-t2i` model supports two aspect ratios:
+
+<ParamField path="16:9" type="string">
+  **Landscape orientation** - Ideal for wide scenes, landscapes, and horizontal compositions
+  
+  ```typescript
+  const { image } = await generateImage({
+    model: decart.image('lucy-pro-t2i'),
+    prompt: 'A panoramic mountain landscape at sunset',
+    aspectRatio: '16:9',
+  });
+  ```
+</ParamField>
+
+<ParamField path="9:16" type="string">
+  **Portrait orientation** - Ideal for vertical compositions, portraits, and tall subjects
+  
+  ```typescript
+  const { image } = await generateImage({
+    model: decart.image('lucy-pro-t2i'),
+    prompt: 'A tall waterfall in a lush forest',
+    aspectRatio: '9:16',
+  });
+  ```
+</ParamField>
+
+<Warning>
+  Other aspect ratios are not supported and will generate a warning. The model will fall back to default behavior if an unsupported aspect ratio is provided.
+</Warning>
+
+## Model Limitations
+
+<AccordionGroup>
+  <Accordion title="Images Per Call">
+    The model generates **one image per API call** (`maxImagesPerCall = 1`). To generate multiple images, make multiple calls to `generateImage()`.
+    
+    ```typescript
+    // Generate multiple images
+    const promises = Array.from({ length: 3 }, () =>
+      generateImage({
+        model: decart.image('lucy-pro-t2i'),
+        prompt: 'Three dogs playing in the snow',
+      })
+    );
+    
+    const results = await Promise.all(promises);
+    ```
+  </Accordion>
+
+  <Accordion title="Size Parameter">
+    The `size` parameter from the AI SDK is **not supported**. Use `aspectRatio` instead to control image dimensions.
+    
+    If you pass a `size` parameter, you'll receive a warning:
+    
+    ```json
+    {
+      "type": "unsupported-setting",
+      "setting": "size"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Aspect Ratio Constraints">
+    Only `16:9` and `9:16` aspect ratios are supported. Other ratios will generate a warning:
+    
+    ```json
+    {
+      "type": "unsupported-setting",
+      "setting": "aspectRatio",
+      "details": "Only 16:9 and 9:16 aspect ratios are supported."
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Model Selection
+
+Create an image model using the `.image()` factory method:
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+
+// Use the default provider instance
+const model = decart.image('lucy-pro-t2i');
+
+// Or create a custom provider instance
+import { createDecart } from '@decartai/ai-sdk-provider';
+
+const customDecart = createDecart({
+  apiKey: 'your-api-key',
+  baseURL: 'https://custom-endpoint.example.com',
+});
+
+const customModel = customDecart.image('lucy-pro-t2i');
+```
+
+## Response Format
+
+The model returns images in binary format with metadata:
+
+```typescript
+const result = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'Three dogs playing in the snow',
+});
+
+console.log(result);
+// {
+//   image: {
+//     uint8Array: Uint8Array [...],
+//     base64: 'data:image/png;base64,...'
+//   },
+//   warnings: [],
+//   response: {
+//     modelId: 'lucy-pro-t2i',
+//     timestamp: Date,
+//     headers: { ... }
+//   }
+// }
+```
+
+<Note>
+  The image format is determined by the API response. Use libraries like `image-type` to detect the format programmatically.
+</Note>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Settings" icon="sliders" href="/image/settings">
+    Learn about aspectRatio and seed settings
+  </Card>
+  
+  <Card title="Examples" icon="code" href="/image/examples">
+    See complete code examples
+  </Card>
+</CardGroup>

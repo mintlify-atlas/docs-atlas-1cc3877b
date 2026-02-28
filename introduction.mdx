@@ -1,0 +1,87 @@
+---
+title: Introduction
+description: Welcome to the Decart AI SDK Provider - generate stunning images and videos using Decart's powerful models with the Vercel AI SDK
+---
+
+# Decart AI SDK Provider
+
+The **Decart AI SDK Provider** brings [Decart](https://decart.ai)'s cutting-edge image and video generation capabilities to the [Vercel AI SDK](https://ai-sdk.dev/docs). Generate high-quality images and videos using simple, type-safe APIs.
+
+## What is Decart?
+
+Decart provides state-of-the-art generative AI models for creating images and videos. With the Decart AI SDK Provider, you can seamlessly integrate these capabilities into your applications using the familiar AI SDK interface.
+
+<CardGroup cols={2}>
+  <Card title="Image Generation" icon="image" href="/image/overview">
+    Create high-quality images from text prompts using lucy-pro-t2i
+  </Card>
+  <Card title="Video Generation" icon="video" href="/video/overview">
+    Generate videos from text or animate images with lucy-pro models
+  </Card>
+  <Card title="Motion Control" icon="arrows" href="/video/motion-control">
+    Control camera and subject movement with trajectory-based video generation
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/decart-provider">
+    Explore the complete API documentation and settings
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<CardGroup cols={3}>
+  <Card title="Text-to-Image" icon="wand-magic-sparkles">
+    Generate images from text descriptions with lucy-pro-t2i
+  </Card>
+  <Card title="Text-to-Video" icon="film">
+    Create videos directly from text prompts
+  </Card>
+  <Card title="Image-to-Video" icon="play">
+    Animate static images into dynamic videos
+  </Card>
+  <Card title="Motion Trajectories" icon="route">
+    Define precise camera and subject paths
+  </Card>
+  <Card title="Aspect Ratio Control" icon="crop">
+    Support for 16:9 landscape and 9:16 portrait
+  </Card>
+  <Card title="Reproducible Results" icon="seedling">
+    Use seed values for consistent outputs
+  </Card>
+</CardGroup>
+
+## Quick Example
+
+Generate an image in just a few lines of code:
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { generateImage } from 'ai';
+
+const { image } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'Three dogs playing in the snow',
+});
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Install the package and get your API key
+  </Card>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get started with your first image and video generation
+  </Card>
+</CardGroup>
+
+## Requirements
+
+- Node.js 18 or higher
+- Vercel AI SDK v6.0.0 or higher
+- A Decart API key from [decart.ai](https://decart.ai)
+
+## Learn More
+
+<Card title="Decart Platform" icon="globe" href="https://decart.ai">
+  Visit the official Decart website to learn more about the platform and get your API key
+</Card>

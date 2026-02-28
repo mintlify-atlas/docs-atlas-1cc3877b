@@ -1,0 +1,105 @@
+---
+title: 'Image Generation Overview'
+description: 'Generate high-quality images using the Decart AI SDK Provider'
+---
+
+## Introduction
+
+The Decart AI SDK Provider enables you to generate high-quality images from text prompts using Decart's image generation models. Built on the [AI SDK](https://ai-sdk.dev/docs), it provides a simple and powerful interface for text-to-image generation.
+
+## Quick Start
+
+<Steps>
+  <Step title="Install the provider">
+    ```bash
+    npm i @decartai/ai-sdk-provider
+    ```
+  </Step>
+
+  <Step title="Import the provider and generate an image">
+    ```typescript
+    import { decart } from '@decartai/ai-sdk-provider';
+    import { generateImage } from 'ai';
+    import fs from 'fs';
+
+    const { image } = await generateImage({
+      model: decart.image('lucy-pro-t2i'),
+      prompt: 'Three dogs playing in the snow',
+    });
+
+    const filename = `image-${Date.now()}.png`;
+    fs.writeFileSync(filename, image.uint8Array);
+    console.log(`Image saved to ${filename}`);
+    ```
+  </Step>
+</Steps>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="High-Quality Generation" icon="image">
+    Generate photorealistic images with the lucy-pro-t2i model
+  </Card>
+  
+  <Card title="Flexible Aspect Ratios" icon="crop">
+    Support for 16:9 landscape and 9:16 portrait orientations
+  </Card>
+  
+  <Card title="Reproducible Results" icon="repeat">
+    Use seed values to generate consistent outputs
+  </Card>
+  
+  <Card title="AI SDK Integration" icon="plug">
+    Seamlessly integrates with the AI SDK ecosystem
+  </Card>
+</CardGroup>
+
+## Available Models
+
+Decart currently offers one image generation model:
+
+| Model ID | Description |
+|----------|-------------|
+| `lucy-pro-t2i` | High-quality text-to-image generation model |
+
+For detailed information about model capabilities, see the [Models](/image/models) page.
+
+## Image Settings
+
+Customize your image generation with optional settings:
+
+- **aspectRatio**: Control the output dimensions (16:9 or 9:16)
+- **seed**: Set a seed value for reproducible results
+
+<Note>
+  The `size` setting is not supported by Decart models. Use `aspectRatio` instead to control image dimensions.
+</Note>
+
+For comprehensive documentation on all settings, see the [Settings](/image/settings) page.
+
+## API Reference
+
+The image generation functionality is provided through the AI SDK's `generateImage()` function. For complete API details, refer to:
+
+- [generateImage() Reference](https://ai-sdk.dev/docs/reference/ai-sdk-core/generate-image)
+- [Image Models Documentation](https://ai-sdk.dev/docs/ai-sdk-core/generating-images)
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Explore Models" icon="wand-magic-sparkles" href="/image/models">
+    Learn about lucy-pro-t2i capabilities
+  </Card>
+  
+  <Card title="View Examples" icon="code" href="/image/examples">
+    See real-world code examples
+  </Card>
+  
+  <Card title="Configure Settings" icon="sliders" href="/image/settings">
+    Customize generation parameters
+  </Card>
+  
+  <Card title="Configuration" icon="wrench" href="/advanced/configuration">
+    Configure the Decart provider
+  </Card>
+</CardGroup>

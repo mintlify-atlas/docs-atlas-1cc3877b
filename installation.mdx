@@ -1,0 +1,166 @@
+---
+title: Installation
+description: Install the Decart AI SDK Provider and configure your API key
+---
+
+# Installation
+
+Get started with the Decart AI SDK Provider by installing the package and configuring your API credentials.
+
+## Prerequisites
+
+Before you begin, ensure you have:
+
+- **Node.js 18 or higher** installed on your system
+- **npm**, **yarn**, or **pnpm** package manager
+- A **Decart API key** (see [Getting Your API Key](#getting-your-api-key) below)
+
+## Install the Package
+
+Install the Decart AI SDK Provider using your preferred package manager:
+
+<CodeGroup>
+
+```bash npm
+npm install @decartai/ai-sdk-provider ai
+```
+
+```bash pnpm
+pnpm add @decartai/ai-sdk-provider ai
+```
+
+```bash yarn
+yarn add @decartai/ai-sdk-provider ai
+```
+
+</CodeGroup>
+
+<Info>
+The `ai` package is a peer dependency that provides the core AI SDK functionality like `generateImage()` and `experimental_generateVideo()`.
+</Info>
+
+## Getting Your API Key
+
+To use the Decart AI SDK Provider, you'll need an API key from Decart:
+
+<Steps>
+  <Step title="Visit Decart">
+    Go to [decart.ai](https://decart.ai) and create an account if you don't have one
+  </Step>
+  <Step title="Access API Settings">
+    Navigate to your account settings or API section
+  </Step>
+  <Step title="Generate API Key">
+    Create a new API key for your application
+  </Step>
+  <Step title="Save Securely">
+    Store your API key securely - you'll need it for configuration
+  </Step>
+</Steps>
+
+## Configure Your API Key
+
+There are two ways to provide your API key to the Decart provider:
+
+### Environment Variable (Recommended)
+
+Set the `DECART_API_KEY` environment variable:
+
+```bash
+export DECART_API_KEY='your-api-key-here'
+```
+
+For local development, add it to your `.env` file:
+
+```bash .env
+DECART_API_KEY=your-api-key-here
+```
+
+<Warning>
+Never commit your `.env` file or expose your API key in client-side code. Always keep your API keys secure.
+</Warning>
+
+Then use the default provider instance:
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+
+// The API key is automatically loaded from DECART_API_KEY
+const model = decart.image('lucy-pro-t2i');
+```
+
+### Programmatic Configuration
+
+Alternatively, pass the API key directly when creating a custom provider instance:
+
+```typescript
+import { createDecart } from '@decartai/ai-sdk-provider';
+
+const decart = createDecart({
+  apiKey: 'your-api-key-here',
+});
+```
+
+## Advanced Configuration
+
+For advanced use cases, you can customize the provider with additional options:
+
+```typescript
+import { createDecart } from '@decartai/ai-sdk-provider';
+
+const decart = createDecart({
+  apiKey: 'your-api-key-here',
+  baseURL: 'https://custom-proxy.example.com', // Use a custom API endpoint
+  headers: {
+    'Custom-Header': 'value',
+  },
+  fetch: customFetchImplementation, // Use a custom fetch function
+});
+```
+
+### Configuration Options
+
+- **apiKey** `string`
+  
+  Your Decart API key. Defaults to the `DECART_API_KEY` environment variable.
+
+- **baseURL** `string`
+  
+  Custom API endpoint URL. Defaults to `https://api.decart.ai`. Useful for proxy servers or testing.
+
+- **headers** `Record<string, string>`
+  
+  Additional HTTP headers to include in every request.
+
+- **fetch** `FetchFunction`
+  
+  Custom fetch implementation. Useful for middleware, request interception, or testing.
+
+## Verification
+
+Verify your installation by running a simple test:
+
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { generateImage } from 'ai';
+
+const { image } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A test image',
+});
+
+console.log('Installation successful!');
+```
+
+<Tip>
+If you encounter any issues, check that:
+- Your API key is correctly set
+- You're using Node.js 18 or higher
+- Both `@decartai/ai-sdk-provider` and `ai` packages are installed
+</Tip>
+
+## Next Steps
+
+<Card title="Quickstart Guide" icon="rocket" href="/quickstart">
+  Learn how to generate your first images and videos with practical examples
+</Card>

@@ -1,0 +1,199 @@
+---
+title: Video Models
+description: Complete reference for Decart's Lucy video generation models
+---
+
+Decart offers four specialized video models through the AI SDK. Each model is optimized for specific video generation tasks.
+
+## Available Models
+
+### lucy-pro-t2v
+
+**Text-to-Video Generation**
+
+The `lucy-pro-t2v` model generates videos directly from text prompts without requiring an input image.
+
+<ParamField path="modelId" type="string" required>
+  `lucy-pro-t2v`
+</ParamField>
+
+**Capabilities:**
+- Text-only input
+- High-quality video generation
+- Supports landscape (16:9) and portrait (9:16) orientations
+- 720p and 480p resolution options
+
+**Example:**
+```typescript
+import { decart } from '@decartai/ai-sdk-provider';
+import { experimental_generateVideo as generateVideo } from 'ai';
+
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'A man is riding a horse in a field',
+});
+```
+
+**Source Reference:** `src/decart-video-settings.ts:2`
+
+---
+
+### lucy-pro-i2v
+
+**Image-to-Video Generation (Production)**
+
+The `lucy-pro-i2v` model animates static images into videos, guided by an optional text prompt.
+
+<ParamField path="modelId" type="string" required>
+  `lucy-pro-i2v`
+</ParamField>
+
+**Capabilities:**
+- Requires input image
+- Optional text prompt for animation guidance
+- High-quality production-ready output
+- Supports landscape and portrait orientations
+
+**Example:**
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-pro-i2v'),
+  prompt: {
+    image: imageData,
+    text: 'The subject begins to walk forward slowly',
+  },
+});
+```
+
+**Source Reference:** `examples/tasks/video-generation-i2v.ts:4`
+
+---
+
+### lucy-dev-i2v
+
+**Image-to-Video Generation (Development)**
+
+The `lucy-dev-i2v` model provides image-to-video capabilities optimized for development and testing workflows.
+
+<ParamField path="modelId" type="string" required>
+  `lucy-dev-i2v`
+</ParamField>
+
+**Capabilities:**
+- Requires input image
+- Optional text prompt for animation guidance
+- Faster processing for development iteration
+- Same API interface as `lucy-pro-i2v`
+
+**Use Cases:**
+- Rapid prototyping
+- Testing animation concepts
+- Development environments
+
+**Source Reference:** `src/decart-video-settings.ts:4`
+
+---
+
+### lucy-motion
+
+**Trajectory-Based Motion Control**
+
+The `lucy-motion` model enables precise control over camera and subject movement using trajectory points.
+
+<ParamField path="modelId" type="string" required>
+  `lucy-motion`
+</ParamField>
+
+**Capabilities:**
+- Requires input image
+- Trajectory-based motion control
+- Precise frame-by-frame positioning
+- Normalized coordinate system (0.0 to 1.0)
+
+**Example:**
+```typescript
+const { videos } = await generateVideo({
+  model: decart.video('lucy-motion'),
+  prompt: {
+    image: imageData,
+    text: 'The subject moves along the specified path',
+  },
+  providerOptions: {
+    decart: {
+      trajectory: [
+        { frame: 0, x: 0.5, y: 0.5 },
+        { frame: 12, x: 0.7, y: 0.9 },
+        { frame: 25, x: 0.3, y: 0.1 },
+      ],
+    },
+  },
+});
+```
+
+**Source References:**
+- Model definition: `src/decart-video-settings.ts:5`
+- Trajectory option: `src/decart-video-model.ts:22`
+- Example usage: `examples/tasks/video-generation-motion.ts:4`
+
+---
+
+## Model Comparison
+
+| Feature | lucy-pro-t2v | lucy-pro-i2v | lucy-dev-i2v | lucy-motion |
+|---------|--------------|--------------|--------------|-------------|
+| Input Type | Text only | Image + text | Image + text | Image + text + trajectory |
+| Quality | Production | Production | Development | Production |
+| Motion Control | Limited | Limited | Limited | Precise |
+| Use Case | Text-to-video | Image animation | Dev/testing | Motion control |
+| Trajectory Support | No | No | No | Yes |
+
+## Common Settings
+
+All video models support these settings:
+
+<ParamField path="aspectRatio" type="string">
+  Video aspect ratio. Supported values: `16:9` (landscape) and `9:16` (portrait).
+</ParamField>
+
+<ParamField path="seed" type="number">
+  Seed value for reproducible results.
+</ParamField>
+
+<ParamField path="resolution" type="string">
+  Video resolution. Supported values: `1280x720` (720p) and `854x480` (480p).
+</ParamField>
+
+<Note>
+  See the [Settings](/video/settings) page for detailed configuration options.
+</Note>
+
+## API Specifications
+
+All models implement the AI SDK's `VideoModelV3` specification:
+
+<ParamField path="specificationVersion" type="string">
+  `v3`
+</ParamField>
+
+<ParamField path="maxVideosPerCall" type="number">
+  `1` - Each call generates one video
+</ParamField>
+
+**Source Reference:** `src/decart-video-model.ts:84-86`
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Text-to-Video Guide" icon="wand-magic-sparkles" href="/video/text-to-video">
+    Learn how to generate videos from text
+  </Card>
+  <Card title="Image-to-Video Guide" icon="image" href="/video/image-to-video">
+    Animate images into videos
+  </Card>
+  <Card title="Motion Control" icon="route" href="/video/motion-control">
+    Control movement with trajectories
+  </Card>
+  <Card title="Settings Reference" icon="sliders" href="/video/settings">
+    Configure video generation
+  </Card>
+</CardGroup>

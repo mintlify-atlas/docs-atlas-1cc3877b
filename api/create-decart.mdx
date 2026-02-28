@@ -1,0 +1,99 @@
+---
+title: createDecart()
+description: Factory function to create a configured Decart provider instance
+---
+
+## Function Signature
+
+```typescript
+function createDecart(options?: DecartProviderSettings): DecartProvider
+```
+
+Creates and configures a Decart provider instance with custom settings. Use this when you need to configure API keys, base URLs, or other provider-level settings.
+
+## Parameters
+
+<ParamField path="options" type="DecartProviderSettings" default="{}">
+  Optional configuration object for the provider
+  
+  <Expandable title="DecartProviderSettings properties">
+    <ParamField path="apiKey" type="string" optional>
+      API key for authentication. If not provided, will load from `DECART_API_KEY` environment variable.
+    </ParamField>
+    
+    <ParamField path="baseURL" type="string" optional>
+      Base URL for API requests. Defaults to `https://api.decart.ai`.
+    </ParamField>
+    
+    <ParamField path="headers" type="Record<string, string>" optional>
+      Custom headers to include with every request.
+    </ParamField>
+    
+    <ParamField path="fetch" type="FetchFunction" optional>
+      Custom fetch implementation for making HTTP requests.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Returns
+
+<ResponseField name="DecartProvider" type="DecartProvider">
+  A configured provider instance with methods to create image and video models.
+  
+  See [DecartProvider](/api/decart-provider) for full interface details.
+</ResponseField>
+
+## Examples
+
+### Default Configuration
+
+```typescript
+import { createDecart } from '@ai-sdk/decart';
+
+const decart = createDecart();
+// Uses DECART_API_KEY from environment
+```
+
+### Custom API Key
+
+```typescript
+import { createDecart } from '@ai-sdk/decart';
+
+const decart = createDecart({
+  apiKey: 'your-api-key-here'
+});
+```
+
+### Custom Base URL
+
+```typescript
+import { createDecart } from '@ai-sdk/decart';
+
+const decart = createDecart({
+  baseURL: 'https://custom-api.example.com',
+  apiKey: 'your-api-key-here'
+});
+```
+
+### Custom Headers
+
+```typescript
+import { createDecart } from '@ai-sdk/decart';
+
+const decart = createDecart({
+  headers: {
+    'X-Custom-Header': 'value'
+  }
+});
+```
+
+## Default Instance
+
+A default pre-configured instance is also exported:
+
+```typescript
+import { decart } from '@ai-sdk/decart';
+
+// Equivalent to createDecart()
+const model = decart.image('lucy-pro-t2i');
+```

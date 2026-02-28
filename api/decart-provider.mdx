@@ -1,0 +1,140 @@
+---
+title: DecartProvider
+description: Provider interface for creating Decart image and video models
+---
+
+## Interface
+
+```typescript
+interface DecartProvider extends ProviderV2 {
+  image(modelId: DecartImageModelId): ImageModelV2;
+  imageModel(modelId: DecartImageModelId): ImageModelV2;
+  video(modelId: DecartVideoModelId): Experimental_VideoModelV3;
+  videoModel(modelId: DecartVideoModelId): Experimental_VideoModelV3;
+}
+```
+
+The `DecartProvider` interface extends the AI SDK's `ProviderV2` and provides methods to instantiate image and video generation models.
+
+## Methods
+
+### image()
+
+```typescript
+image(modelId: DecartImageModelId): ImageModelV2
+```
+
+Creates an image generation model instance.
+
+<ParamField path="modelId" type="DecartImageModelId" required>
+  The identifier of the image model to use.
+  
+  See [Image Models](/api/image-models) for available model IDs.
+</ParamField>
+
+<ResponseField name="return" type="ImageModelV2">
+  An image model instance compatible with AI SDK's `generateImage()` function.
+</ResponseField>
+
+### imageModel()
+
+```typescript
+imageModel(modelId: DecartImageModelId): ImageModelV2
+```
+
+Alias for `image()`. Creates an image generation model instance.
+
+<ParamField path="modelId" type="DecartImageModelId" required>
+  The identifier of the image model to use.
+</ParamField>
+
+<ResponseField name="return" type="ImageModelV2">
+  An image model instance compatible with AI SDK's `generateImage()` function.
+</ResponseField>
+
+### video()
+
+```typescript
+video(modelId: DecartVideoModelId): Experimental_VideoModelV3
+```
+
+Creates a video generation model instance.
+
+<ParamField path="modelId" type="DecartVideoModelId" required>
+  The identifier of the video model to use.
+  
+  See [Video Models](/api/video-models) for available model IDs.
+</ParamField>
+
+<ResponseField name="return" type="Experimental_VideoModelV3">
+  A video model instance compatible with AI SDK's `experimental_generateVideo()` function.
+</ResponseField>
+
+### videoModel()
+
+```typescript
+videoModel(modelId: DecartVideoModelId): Experimental_VideoModelV3
+```
+
+Alias for `video()`. Creates a video generation model instance.
+
+<ParamField path="modelId" type="DecartVideoModelId" required>
+  The identifier of the video model to use.
+</ParamField>
+
+<ResponseField name="return" type="Experimental_VideoModelV3">
+  A video model instance compatible with AI SDK's `experimental_generateVideo()` function.
+</ResponseField>
+
+## Examples
+
+### Creating an Image Model
+
+```typescript
+import { createDecart } from '@ai-sdk/decart';
+import { generateImage } from 'ai';
+
+const decart = createDecart();
+
+const { image } = await generateImage({
+  model: decart.image('lucy-pro-t2i'),
+  prompt: 'A serene mountain landscape'
+});
+```
+
+### Creating a Video Model
+
+```typescript
+import { createDecart } from '@ai-sdk/decart';
+import { experimental_generateVideo } from 'ai';
+
+const decart = createDecart();
+
+const { video } = await experimental_generateVideo({
+  model: decart.video('lucy-pro-t2v'),
+  prompt: 'Waves crashing on a beach at sunset'
+});
+```
+
+### Using Both Methods
+
+```typescript
+import { createDecart } from '@ai-sdk/decart';
+
+const decart = createDecart();
+
+// These are equivalent
+const imageModel1 = decart.image('lucy-pro-t2i');
+const imageModel2 = decart.imageModel('lucy-pro-t2i');
+
+// These are equivalent
+const videoModel1 = decart.video('lucy-pro-t2v');
+const videoModel2 = decart.videoModel('lucy-pro-t2v');
+```
+
+## Unsupported Methods
+
+The Decart provider does not support language or text embedding models. Calling these methods will throw a `NoSuchModelError`:
+
+- `languageModel(modelId: string)` - Not supported
+- `textEmbeddingModel(modelId: string)` - Not supported
