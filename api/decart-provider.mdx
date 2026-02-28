@@ -91,7 +91,7 @@ Alias for `video()`. Creates a video generation model instance.
 ### Creating an Image Model
 
 ```typescript
-import { createDecart } from '@ai-sdk/decart';
+import { createDecart } from '@decartai/ai-sdk-provider';
 import { generateImage } from 'ai';
 
 const decart = createDecart();
@@ -105,7 +105,7 @@ const { image } = await generateImage({
 ### Creating a Video Model
 
 ```typescript
-import { createDecart } from '@ai-sdk/decart';
+import { createDecart } from '@decartai/ai-sdk-provider';
 import { experimental_generateVideo } from 'ai';
 
 const decart = createDecart();
@@ -119,7 +119,7 @@ const { video } = await experimental_generateVideo({
 ### Using Both Methods
 
 ```typescript
-import { createDecart } from '@ai-sdk/decart';
+import { createDecart } from '@decartai/ai-sdk-provider';
 
 const decart = createDecart();
 

@@ -36,7 +36,7 @@ Text-to-image generation model powered by Lucy Pro.
 ### Basic Text-to-Image
 
 ```typescript
-import { createDecart } from '@ai-sdk/decart';
+import { createDecart } from '@decartai/ai-sdk-provider';
 import { generateImage } from 'ai';
 
 const decart = createDecart();
@@ -50,7 +50,7 @@ const { image } = await generateImage({
 ### With Seed for Reproducibility
 
 ```typescript
-import { createDecart } from '@ai-sdk/decart';
+import { createDecart } from '@decartai/ai-sdk-provider';
 import { generateImage } from 'ai';
 
 const decart = createDecart();
@@ -65,7 +65,7 @@ const { image } = await generateImage({
 ### With Aspect Ratio
 
 ```typescript
-import { createDecart } from '@ai-sdk/decart';
+import { createDecart } from '@decartai/ai-sdk-provider';
 import { generateImage } from 'ai';
 
 const decart = createDecart();

@@ -48,7 +48,7 @@ Creates and configures a Decart provider instance with custom settings. Use this
 ### Default Configuration
 
 ```typescript
-import { createDecart } from '@ai-sdk/decart';
+import { createDecart } from '@decartai/ai-sdk-provider';
 
 const decart = createDecart();
 // Uses DECART_API_KEY from environment
@@ -57,7 +57,7 @@ const decart = createDecart();
 ### Custom API Key
 
 ```typescript
-import { createDecart } from '@ai-sdk/decart';
+import { createDecart } from '@decartai/ai-sdk-provider';
 
 const decart = createDecart({
   apiKey: 'your-api-key-here'
@@ -67,7 +67,7 @@ const decart = createDecart({
 ### Custom Base URL
 
 ```typescript
-import { createDecart } from '@ai-sdk/decart';
+import { createDecart } from '@decartai/ai-sdk-provider';
 
 const decart = createDecart({
   baseURL: 'https://custom-api.example.com',
@@ -78,7 +78,7 @@ const decart = createDecart({
 ### Custom Headers
 
 ```typescript
-import { createDecart } from '@ai-sdk/decart';
+import { createDecart } from '@decartai/ai-sdk-provider';
 
 const decart = createDecart({
   headers: {
@@ -92,8 +92,22 @@ const decart = createDecart({
 A default pre-configured instance is also exported:
 
 ```typescript
-import { decart } from '@ai-sdk/decart';
+import { decart } from '@decartai/ai-sdk-provider';
 
 // Equivalent to createDecart()
 const model = decart.image('lucy-pro-t2i');
 ```
+
+## VERSION Export
+
+The package version is also exported for runtime version checking:
+
+```typescript
+import { VERSION } from '@decartai/ai-sdk-provider';
+
+console.log(`Using Decart provider version: ${VERSION}`);
+```
+
+<ParamField path="VERSION" type="string">
+  The current version of the `@decartai/ai-sdk-provider` package.
+</ParamField>

@@ -19,7 +19,7 @@ Decart image models support standard AI SDK image generation settings with some 
 
 ```typescript
 import { generateImage } from 'ai';
-import { decart } from '@ai-sdk/decart';
+import { decart } from '@decartai/ai-sdk-provider';
 
 const { image } = await generateImage({
   model: decart.image('lucy-pro-t2i'),
@@ -37,7 +37,7 @@ const { image } = await generateImage({
 
 ```typescript
 import { generateImage } from 'ai';
-import { decart } from '@ai-sdk/decart';
+import { decart } from '@decartai/ai-sdk-provider';
 
 const { image } = await generateImage({
   model: decart.image('lucy-pro-t2i'),
@@ -60,7 +60,7 @@ const { image } = await generateImage({
 
 ```typescript
 import { generateImage } from 'ai';
-import { decart } from '@ai-sdk/decart';
+import { decart } from '@decartai/ai-sdk-provider';
 
 // Landscape
 const { image: landscape } = await generateImage({
@@ -91,7 +91,7 @@ The following settings are not supported and will produce warnings:
 
 ```typescript
 import { generateImage } from 'ai';
-import { decart } from '@ai-sdk/decart';
+import { decart } from '@decartai/ai-sdk-provider';
 
 const result = await generateImage({
   model: decart.image('lucy-pro-t2i'),
@@ -120,7 +120,7 @@ When using unsupported settings, the model returns warnings in the response:
 
 ```typescript
 import { generateImage } from 'ai';
-import { decart } from '@ai-sdk/decart';
+import { decart } from '@decartai/ai-sdk-provider';
 
 const result = await generateImage({
   model: decart.image('lucy-pro-t2i'),

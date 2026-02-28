@@ -20,7 +20,7 @@ Decart video models support standard AI SDK video generation settings with some 
 
 ```typescript
 import { experimental_generateVideo } from 'ai';
-import { decart } from '@ai-sdk/decart';
+import { decart } from '@decartai/ai-sdk-provider';
 
 // Text-to-video
 const { video } = await experimental_generateVideo({
@@ -46,7 +46,7 @@ const { video: guided } = await experimental_generateVideo({
 
 ```typescript
 import { experimental_generateVideo } from 'ai';
-import { decart } from '@ai-sdk/decart';
+import { decart } from '@decartai/ai-sdk-provider';
 
 const { video } = await experimental_generateVideo({
   model: decart.video('lucy-pro-t2v'),
@@ -69,7 +69,7 @@ const { video } = await experimental_generateVideo({
 
 ```typescript
 import { experimental_generateVideo } from 'ai';
-import { decart } from '@ai-sdk/decart';
+import { decart } from '@decartai/ai-sdk-provider';
 
 const { video } = await experimental_generateVideo({
   model: decart.video('lucy-pro-t2v'),
@@ -92,7 +92,7 @@ const { video } = await experimental_generateVideo({
 
 ```typescript
 import { experimental_generateVideo } from 'ai';
-import { decart } from '@ai-sdk/decart';
+import { decart } from '@decartai/ai-sdk-provider';
 
 // Landscape
 const { video: landscape } = await experimental_generateVideo({
@@ -124,7 +124,7 @@ const { video: portrait } = await experimental_generateVideo({
 
 ```typescript
 import { experimental_generateVideo } from 'ai';
-import { decart } from '@ai-sdk/decart';
+import { decart } from '@decartai/ai-sdk-provider';
 import { readFileSync } from 'fs';
 
 // Using URL
@@ -180,7 +180,7 @@ The following settings are not supported and will produce warnings:
 
 ```typescript
 import { experimental_generateVideo } from 'ai';
-import { decart } from '@ai-sdk/decart';
+import { decart } from '@decartai/ai-sdk-provider';
 
 const result = await experimental_generateVideo({
   model: decart.video('lucy-pro-t2v'),
@@ -202,7 +202,7 @@ Decart video models support additional options via the `providerOptions.decart` 
 
 ```typescript
 import { experimental_generateVideo } from 'ai';
-import { decart } from '@ai-sdk/decart';
+import { decart } from '@decartai/ai-sdk-provider';
 
 const { video } = await experimental_generateVideo({
   model: decart.video('lucy-pro-t2v'),
@@ -262,7 +262,7 @@ When using unsupported settings, the model returns warnings in the response:
 
 ```typescript
 import { experimental_generateVideo } from 'ai';
-import { decart } from '@ai-sdk/decart';
+import { decart } from '@decartai/ai-sdk-provider';
 
 const result = await experimental_generateVideo({
   model: decart.video('lucy-pro-t2v'),
